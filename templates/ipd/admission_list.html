@@ -1,0 +1,80 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Inpatients" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Inpatients" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Inpatients" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Admission, bed allocation and discharge workflow." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'ipd:bed_map' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="layout-grid" class="h-4 w-4"></i> {% trans "Bed map" %}</a>
+    {% has_perm request.user "ipd.add_admission" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'ipd:admission_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Admission advice" %}</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Inpatients" value=kpis.inpatients icon="bed-double" accent="#8B5CF6" %}
+  {% include "components/kpi_card.html" with label="Admitted today" value=kpis.admitted_today icon="calendar-plus" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Beds available" value=kpis.beds_available icon="bed-single" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Total beds" value=kpis.beds_total icon="building-2" accent="#F59E0B" %}
+</div>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-48">{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
+    <div class="w-52">{{ filter_form.ward.label_tag }}{{ filter_form.ward }}</div>
+    <div class="w-72">{{ filter_form.search.label_tag }}{{ filter_form.search }}</div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}
+    </button>
+  </form>
+
+  {% if admissions %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "IP number" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Doctor" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Bed" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Admitted" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for admission in admissions %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-200">{{ admission.ip_number|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'ipd:admission_detail' admission.pk %}" class="font-medium text-primary-600 hover:underline">{{ admission.patient.display_name }}</a>
+            <span class="ml-1 font-mono text-xs text-slate-400">{{ admission.patient.uhid }}</span>
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ admission.doctor.name_en }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ admission.bed|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ admission.admitted_at|date:"d M Y H:i"|default:"—" }}</td>
+          <td class="px-4 py-3">{% status_badge admission.get_status_display admission.status %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="bed-double" title="No admissions yet" message="Patients admitted to the hospital will appear here." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

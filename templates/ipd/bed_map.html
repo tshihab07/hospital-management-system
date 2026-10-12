@@ -1,0 +1,63 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Bed map" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'ipd:admission_list' %}" class="hover:text-primary-600">{% trans "Inpatients" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Bed map" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Ward & bed map" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Live availability per ward." %}</p>
+  </div>
+  <form method="get" class="flex items-center gap-3">
+    <div class="w-44">{{ ward_type_filter }}</div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Occupied" value=kpis.occupied icon="bed-double" accent="#8B5CF6" %}
+  {% include "components/kpi_card.html" with label="Available" value=kpis.available icon="bed-single" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Maintenance" value=kpis.maintenance icon="wrench" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Total beds" value=kpis.beds_total icon="building-2" accent="#4F46E5" %}
+</div>
+
+<div class="space-y-6">
+  {% for ward in wards %}
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="mb-4 flex items-center justify-between">
+      <div>
+        <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{{ ward.name }}</h2>
+        <p class="text-xs text-slate-400">{{ ward.ward_type_display }} · {% trans "Floor" %} {{ ward.floor }}</p>
+      </div>
+      <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ ward.free_beds }} / {{ ward.beds|length }} {% trans "free" %}</span>
+    </header>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      {% for bed in ward.beds %}
+      <div class="rounded-xl border p-3 {{ bed.css }}">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">{{ bed.bed_no }}</span>
+          <span class="h-2 w-2 rounded-full {{ bed.dot }}"></span>
+        </div>
+        <p class="mt-1 truncate text-xs text-slate-400">
+          {% if bed.occupied %}{{ bed.current_patient }}{% else %}{{ bed.status_display }}{% endif %}
+        </p>
+        <p class="text-[11px] text-slate-400">৳{{ bed.daily_rate }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% empty %}
+  <div>{% include "components/empty_state.html" with icon="building-2" title="No wards" message="Seed the hospital wards to start allocating beds." %}</div>
+  {% endfor %}
+</div>
+{% endblock %}

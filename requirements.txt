@@ -1,8 +1,52 @@
-# Core
-Django==5.2.1
-django-mongodb-backend==5.2.3
-pymongo==4.10.1
-dnspython==2.6.1
+# ---------------------------------------------------------------------------
+# IHMS — Integrated Hospital Management System
+# Runtime dependencies (production)
+# ---------------------------------------------------------------------------
 
-# Auth
-django-allauth==0.63.3
+# Core framework
+Django==5.2.1
+python-dotenv==1.0.1
+
+# Database (Supabase PostgreSQL)
+psycopg[binary]==3.2.3
+
+# Media / images
+Pillow==10.4.0
+
+# Cache / async
+redis==5.2.0
+celery==5.4.0
+
+# Auth / security
+django-axes==6.5.1
+
+# PDF generation
+weasyprint==63.0
+
+# Static files / server
+whitenoise==6.8.2
+gunicorn==23.0.0
+
+# Forms / UI helpers
+django-widget-tweaks==1.5.0
+
+# ---------------------------------------------------------------------------
+# Development / QA dependencies
+# ---------------------------------------------------------------------------
+pytest==8.3.3
+pytest-django==4.9.0
+pytest-cov==6.0.0
+factory-boy==3.3.1
+Faker==30.8.1
+freezegun==1.5.1
+coverage==7.6.8
+
+black==24.10.0
+isort==5.13.2
+flake8==7.1.1
+ruff==0.7.4
+bandit==1.7.10
+pip-audit==2.7.3
+
+django-debug-toolbar==4.4.6
+nplusone==1.0.0
