@@ -34,6 +34,22 @@ def patient_admissions(patient):
     )
 
 
+def discharge_worklist(*, status: str = "", search: str = ""):
+    """Admissions awaiting discharge or already discharged (discharge desk)."""
+    qs = Admission.objects.select_related("patient", "doctor", "bed__ward").filter(
+        status__in=[AdmissionStatus.DISCHARGE_REQUESTED, AdmissionStatus.DISCHARGED]
+    )
+    if status:
+        qs = qs.filter(status=status)
+    if search:
+        qs = qs.filter(
+            Q(patient__full_name_en__icontains=search)
+            | Q(patient__uhid__icontains=search)
+            | Q(ip_number__icontains=search)
+        )
+    return qs.order_by("-admitted_at")
+
+
 def ward_bed_map(*, ward_type: str = ""):
     """Active wards with their beds (and occupants) for the bed map.
 

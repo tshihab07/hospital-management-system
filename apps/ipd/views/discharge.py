@@ -13,9 +13,30 @@ from django.views.generic.base import TemplateResponseMixin
 from apps.masters.models import HospitalProfile
 from core.mixins import IHMSLoginRequiredMixin, IHMSPermissionRequiredMixin
 
-from .. import services
+from .. import selectors, services
 from ..forms import ClearanceForm, DischargeRequestForm, DischargeSummaryForm
 from ..models import Admission
+
+
+class DischargeListView(
+    IHMSLoginRequiredMixin, IHMSPermissionRequiredMixin, TemplateResponseMixin, View
+):
+    template_name = "ipd/discharge_list.html"
+    permission_required = "ipd.view_admission"
+
+    def get(self, request, *args, **kwargs):
+        status = request.GET.get("status", "")
+        search = request.GET.get("search", "")
+        return self.render_to_response(
+            {
+                "page_title": _("Discharges"),
+                "admissions": selectors.discharge_worklist(
+                    status=status, search=search
+                ),
+                "status": status,
+                "search": search,
+            }
+        )
 
 
 def _admission(pk):

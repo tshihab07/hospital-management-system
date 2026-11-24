@@ -34,6 +34,7 @@ urlpatterns = [
         name="admission_transfer",
     ),
     # Discharge workflow
+    path("discharges/", views.DischargeListView.as_view(), name="discharge_list"),
     path(
         "admissions/<int:pk>/discharge/request/",
         views.DischargeRequestView.as_view(),

@@ -8,7 +8,7 @@ from .admissions import (AdmissionCreateView, AdmissionDetailView,
                          AdmissionListView, BedAllocateView, BedTransferView)
 from .care import (BedMapView, IntakeOutputCreateView, MarCreateView,
                    NursingNoteCreateView)
-from .discharge import (ClearanceView, DischargeRequestView,
+from .discharge import (ClearanceView, DischargeListView, DischargeRequestView,
                         DischargeSummaryPdfView, DischargeSummaryView,
                         DischargeView)
 
@@ -25,6 +25,7 @@ __all__ = [
     "MarCreateView",
     "IntakeOutputCreateView",
     "ClearanceView",
+    "DischargeListView",
     "DischargeRequestView",
     "DischargeView",
     "DischargeSummaryView",
