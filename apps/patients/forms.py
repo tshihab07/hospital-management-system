@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.accounts.forms import INPUT_CLASSES
 
-from .models import (DocumentCategory, Gender, Patient, PatientDocument,
+from .models import (Gender, Patient, PatientDocument,
                      PatientType)
 
 
