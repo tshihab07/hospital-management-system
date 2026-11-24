@@ -8,8 +8,7 @@ import pytest
 
 from apps.hr import services
 from apps.hr.models import (Attendance, AttendanceSource, AttendanceStatus,
-                            DutyRoster, LeaveBalance, LeaveRequest,
-                            LeaveStatus, LeaveType, Shift, Staff)
+                            DutyRoster, LeaveBalance, LeaveStatus, LeaveType, Shift, Staff)
 
 pytestmark = pytest.mark.django_db
 

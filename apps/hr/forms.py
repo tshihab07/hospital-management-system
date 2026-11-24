@@ -10,8 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.accounts.forms import INPUT_CLASSES
 from apps.masters.models import Department, Designation
 
-from .models import (Attendance, AttendanceSource, AttendanceStatus,
-                     LeaveRequest, LeaveStatus, LeaveType, Shift, Staff,
+from .models import (Attendance, AttendanceSource, LeaveRequest, LeaveStatus, LeaveType, Shift, Staff,
                      StaffStatus)
 
 WEEKDAY_CHOICES = [

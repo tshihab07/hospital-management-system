@@ -33,6 +33,20 @@ class StaffStatus(models.TextChoices):
     TERMINATED = "terminated", _("Terminated")
 
 
+class TaxCategory(models.TextChoices):
+    """Income-taxpayer category (drives the tax-free threshold & slabs)."""
+
+    GENERAL = "general", _("General taxpayer")
+    FEMALE_SENIOR = "female_senior", _("Woman / senior citizen (65+)")
+    DISABLED = "disabled", _("Person with disability / third gender")
+    FREEDOM_FIGHTER = "freedom_fighter", _("Gazetted freedom fighter")
+
+
+class SalaryPaymentMode(models.TextChoices):
+    CASH = "cash", _("Cash")
+    BANK = "bank", _("Bank transfer (BEFTN)")
+
+
 class Shift(TimeStampedModel):
     """A reusable shift template (Morning/Evening/Night/General)."""
 
@@ -130,6 +144,29 @@ class Staff(TimeStampedModel):
     )
     other_allowance = models.DecimalField(
         _("other allowance"), max_digits=12, decimal_places=2, default=0
+    )
+    # Payroll attributes (RULES Phase 14).
+    tax_category = models.CharField(
+        _("tax category"),
+        max_length=20,
+        choices=TaxCategory.choices,
+        default=TaxCategory.GENERAL,
+    )
+    pf_eligible = models.BooleanField(
+        _("provident fund eligible"), default=True
+    )
+    salary_payment_mode = models.CharField(
+        _("salary payment mode"),
+        max_length=8,
+        choices=SalaryPaymentMode.choices,
+        default=SalaryPaymentMode.BANK,
+    )
+    bank_name = models.CharField(_("bank name"), max_length=120, blank=True)
+    bank_account_no = models.CharField(
+        _("bank account no."), max_length=40, blank=True
+    )
+    bank_routing_no = models.CharField(
+        _("bank routing no."), max_length=20, blank=True
     )
     notes = models.TextField(_("notes"), blank=True)
     is_active = models.BooleanField(_("active"), default=True, db_index=True)
