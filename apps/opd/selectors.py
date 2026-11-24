@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date
 
 from django.db.models import Count, Q
 from django.utils import timezone

@@ -7,7 +7,6 @@ against a block and receive an automatic per-day token via a row-locked
 
 from __future__ import annotations
 
-from datetime import date, timedelta
 
 from django.conf import settings
 from django.core.exceptions import ValidationError

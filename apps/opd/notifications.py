@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 
 from django.core.mail import send_mail
-from django.utils import timezone
 from django.utils.translation import gettext as _
 
 logger = logging.getLogger("ihms.opd")

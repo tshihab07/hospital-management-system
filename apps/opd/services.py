@@ -7,13 +7,13 @@ are unique per doctor per day.
 
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date
 
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from core.audit import AuditAction, AuditLog, log_action, model_to_dict_safe
+from core.audit import AuditAction, log_action, model_to_dict_safe
 
 from . import notifications, selectors
 from .models import (Appointment, AppointmentStatus, AppointmentType,
