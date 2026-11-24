@@ -9,6 +9,11 @@
   /hr/            → doctor & staff management
   /emr/           → EMR & CPOE (clinical core)
   /ipd/           → IPD, admission & bed management
+  /icu/           → ICU / CCU & Emergency
+  /ot/            → Operation Theatre (surgery scheduling)
+  /billing/       → billing, payments & patient ledger
+  /accounting/    → general ledger & financial reports
+  /payroll/       → payroll, payslips & BEFTN bank files
   /health/        → liveness probe
 """
 
@@ -30,6 +35,15 @@ urlpatterns = [
     path("hr/", include("apps.hr.urls")),
     path("emr/", include("apps.emr.urls")),
     path("ipd/", include("apps.ipd.urls")),
+    path("icu/", include("apps.icu.urls")),
+    path("ot/", include("apps.ot.urls")),
+    path("lab/", include("apps.lab.urls")),
+    path("pharmacy/", include("apps.pharmacy.urls")),
+    path("billing/", include("apps.billing.urls")),
+    path("accounting/", include("apps.accounting.urls")),
+    path("payroll/", include("apps.payroll.urls")),
+    path("reports/", include("apps.reports.urls")),
+    path("portal/", include("apps.portal.urls")),
     path("i18n/setlang/", set_language, name="set_language"),
     path("health/", core_views.health, name="health"),
     path("", core_views.root_redirect, name="root"),

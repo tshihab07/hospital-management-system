@@ -93,6 +93,15 @@ LOCAL_APPS = [
     "apps.hr",
     "apps.emr",
     "apps.ipd",
+    "apps.icu",
+    "apps.ot",
+    "apps.lab",
+    "apps.pharmacy",
+    "apps.billing",
+    "apps.accounting",
+    "apps.payroll",
+    "apps.reports",
+    "apps.portal",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -356,6 +365,30 @@ LOGGING = {
 }
 
 # ---------------------------------------------------------------------------
+# Error tracking (Sentry) — optional, activated only when a DSN is provided.
+# ---------------------------------------------------------------------------
+SENTRY_DSN = env("SENTRY_DSN", "")
+
+if SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=float(env("SENTRY_TRACES_SAMPLE_RATE", "0.0") or "0.0"),
+            send_default_pii=False,
+            environment=env("SENTRY_ENVIRONMENT", "production"),
+        )
+    except ImportError:  # pragma: no cover - optional dependency
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "SENTRY_DSN set but sentry-sdk is not installed; skipping."
+        )
+
+# ---------------------------------------------------------------------------
 # Defaults
 # ---------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -372,6 +405,42 @@ IHMS = {
     "IP_NUMBER_WIDTH": 5,
     "IP_DAILY_NURSING_RATE": "300",
     "IP_DAILY_DOCTOR_VISIT_RATE": "500",
+    "ER_PREFIX": env("ER_PREFIX", "ER"),
+    "ER_NUMBER_WIDTH": 5,
+    "OT_PREFIX": env("OT_PREFIX", "OT"),
+    "OT_NUMBER_WIDTH": 5,
+    "OT_DAY_START": env("OT_DAY_START", "08:00"),
+    "OT_DAY_END": env("OT_DAY_END", "20:00"),
+    "LAB_SAMPLE_PREFIX": env("LAB_SAMPLE_PREFIX", "SMP"),
+    "LAB_REPORT_PREFIX": env("LAB_REPORT_PREFIX", "LR"),
+    "LAB_NUMBER_WIDTH": 5,
+    "PHARMACY_PR_PREFIX": env("PHARMACY_PR_PREFIX", "PR"),
+    "PHARMACY_PO_PREFIX": env("PHARMACY_PO_PREFIX", "PO"),
+    "PHARMACY_GRN_PREFIX": env("PHARMACY_GRN_PREFIX", "GRN"),
+    "PHARMACY_NUMBER_WIDTH": 5,
+    "PHARMACY_EXPIRY_ALERT_DAYS": int(env("PHARMACY_EXPIRY_ALERT_DAYS", "30")),
+    "BILL_PREFIX": env("BILL_PREFIX", "BILL"),
+    "BILL_NUMBER_WIDTH": 5,
+    "MONEY_RECEIPT_PREFIX": env("MONEY_RECEIPT_PREFIX", "MR"),
+    "MONEY_RECEIPT_NUMBER_WIDTH": 5,
+    "ADVANCE_PREFIX": env("ADVANCE_PREFIX", "ADV"),
+    "REFUND_PREFIX": env("REFUND_PREFIX", "REF"),
+    "CREDIT_NOTE_PREFIX": env("CREDIT_NOTE_PREFIX", "CN"),
+    "CREDIT_NOTE_NUMBER_WIDTH": 5,
+    "PACKAGE_PREFIX": env("PACKAGE_PREFIX", "PKG"),
+    "PACKAGE_NUMBER_WIDTH": 5,
+    "PAYMENT_GATEWAY_ENABLED": env_bool("PAYMENT_GATEWAY_ENABLED", True),
+    "BILL_DEFAULT_VAT_RATE": env("BILL_DEFAULT_VAT_RATE", "0"),
+    "BILL_DISCOUNT_APPROVAL_THRESHOLD": env(
+        "BILL_DISCOUNT_APPROVAL_THRESHOLD", "1000"
+    ),
+    "BILL_DISCOUNT_APPROVAL_PCT": env("BILL_DISCOUNT_APPROVAL_PCT", "10"),
+    "JOURNAL_PREFIX": env("JOURNAL_PREFIX", "JE"),
+    "JOURNAL_NUMBER_WIDTH": 5,
+    "ACCOUNTING_FISCAL_YEAR_START_MONTH": int(
+        env("ACCOUNTING_FISCAL_YEAR_START_MONTH", "7")
+    ),
+    "ACCOUNTING_DEFAULT_VAT_RATE": env("ACCOUNTING_DEFAULT_VAT_RATE", "15"),
     "DATE_FORMAT": "d/m/Y",
     "DATETIME_FORMAT": "d/m/Y H:i",
 }
