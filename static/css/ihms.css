@@ -1,0 +1,83 @@
+/*
+ * IHMS — minimal global stylesheet.
+ *
+ * This file only defines CSS custom properties for the "Clinical Indigo"
+ * design system and a handful of cross-cutting utilities (tabular numbers,
+ * scrollbars, focus rings). Component styling lives in Tailwind utility
+ * classes inside templates. No ad-hoc colours are defined here.
+ */
+
+:root {
+  --ihms-primary: #4f46e5;
+  --ihms-primary-600: #4338ca;
+  --ihms-teal: #14b8a6;
+  --ihms-bg-page: #f8fafc;
+  --ihms-bg-surface: #ffffff;
+  --ihms-bg-muted: #f1f5f9;
+  --ihms-border: #e2e8f0;
+  --ihms-text: #0f172a;
+  --ihms-text-muted: #94a3b8;
+}
+
+[data-theme="dark"] {
+  --ihms-bg-page: #0b1220;
+  --ihms-bg-surface: #111827;
+  --ihms-bg-muted: #1e293b;
+  --ihms-border: #334155;
+  --ihms-text: #f1f5f9;
+  --ihms-text-muted: #94a3b8;
+  --ihms-primary: #818cf8;
+  --ihms-teal: #2dd4bf;
+}
+
+/* Accessible, always-visible focus ring (WCAG 2.1 AA). */
+:focus-visible {
+  outline: 2px solid var(--ihms-primary);
+  outline-offset: 2px;
+}
+
+/* Tabular figures for money, ids and dosages (RULES §5.1.5). */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Thin, unobtrusive scrollbars for data-dense tables. */
+.ihms-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.ihms-scroll::-webkit-scrollbar-thumb {
+  background: var(--ihms-border);
+  border-radius: 9999px;
+}
+
+/* Respect reduced motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Skeleton shimmer used for loading states. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--ihms-bg-muted);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
