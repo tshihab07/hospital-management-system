@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ account.username }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounts:user_list' %}" class="hover:text-primary-600">{% trans "Users" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ account.username }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex items-center gap-4">
+    <span class="grid h-14 w-14 place-items-center rounded-2xl bg-primary-500 text-lg font-semibold text-white">{{ account.initials }}</span>
+    <div>
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ account.get_full_name }}</h1>
+      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ account.username }}{% if account.designation %} · {{ account.designation }}{% endif %}</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "accounts.change_user" as can_change %}
+    {% if can_change %}
+    <a href="{% url 'accounts:user_update' account.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="pencil" class="h-4 w-4"></i> {% trans "Edit" %}
+    </a>
+    <a href="{% url 'accounts:user_set_password' account.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="key-round" class="h-4 w-4"></i> {% trans "Set password" %}
+    </a>
+    <form method="post" action="{% url 'accounts:user_toggle_active' account.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] border px-4 text-sm {% if account.is_active %}border-red-200 text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10{% else %}border-emerald-200 text-emerald-600 hover:bg-emerald-50{% endif %}">
+        <i data-lucide="{% if account.is_active %}user-x{% else %}user-check{% endif %}" class="h-4 w-4"></i>
+        {% if account.is_active %}{% trans "Deactivate" %}{% else %}{% trans "Activate" %}{% endif %}
+      </button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Profile" %}</h2>
+    <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Email" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ account.email|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Phone" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ account.phone|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Name (Bengali)" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ account.full_name_bn|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Status" %}</dt><dd class="mt-0.5">{% if account.is_active %}{% status_badge "Active" "success" %}{% else %}{% status_badge "Inactive" "danger" %}{% endif %}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Joined" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ account.date_joined|ihms_date }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Last login" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ account.last_login|ihms_datetime|default:"—" }}</dd></div>
+    </dl>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Roles" %}</h2>
+    <ul class="mt-4 space-y-2">
+      {% for role in roles %}
+      <li class="flex items-center justify-between rounded-[10px] border border-slate-100 px-3 py-2 dark:border-slate-800">
+        <a href="{% url 'accounts:role_detail' role.pk %}" class="text-sm text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ role.name }}</a>
+        <span class="text-xs text-slate-400">{{ role.permission_count }} {% trans "perms" %}</span>
+      </li>
+      {% empty %}
+      <li class="text-sm text-slate-400">{% trans "No roles assigned." %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

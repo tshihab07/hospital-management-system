@@ -1,0 +1,43 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Audit entry" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounts:audit_log' %}" class="hover:text-primary-600">{% trans "Audit Log" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ entry.pk }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ entry.get_action_display }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ entry.created_at|ihms_datetime }}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Change payload" %}</h2>
+    {% if entry.changes %}
+    <pre class="mt-4 overflow-x-auto rounded-[10px] bg-slate-900 p-4 text-xs text-slate-100">{{ entry.changes_json }}</pre>
+    {% else %}
+    <p class="mt-4 text-sm text-slate-400">{% trans "No structured payload for this entry." %}</p>
+    {% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Context" %}</h2>
+    <dl class="mt-4 space-y-3 text-sm">
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "User" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.user.get_full_name|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Model" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.model_name|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Object" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.object_repr|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "IP address" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.ip_address|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Path" %}</dt><dd class="break-all text-slate-700 dark:text-slate-200">{{ entry.method }} {{ entry.path|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "User agent" %}</dt><dd class="break-all text-xs text-slate-500">{{ entry.user_agent|default:"—" }}</dd></div>
+    </dl>
+  </section>
+</div>
+{% endblock %}

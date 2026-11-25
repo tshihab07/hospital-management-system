@@ -1,0 +1,67 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounts:user_list' %}" class="hover:text-primary-600">{% trans "Users" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ page_title }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ page_title }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+    {% if is_create %}{% trans "Create a new account and assign roles." %}{% else %}{% trans "Update account details and role assignments." %}{% endif %}
+  </p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-3xl rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="post" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+    <div class="mb-4 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+      {% include "components/form_field.html" with field=form.username %}
+      {% include "components/form_field.html" with field=form.email %}
+      {% include "components/form_field.html" with field=form.full_name_en %}
+      {% include "components/form_field.html" with field=form.full_name_bn %}
+      {% include "components/form_field.html" with field=form.phone %}
+      {% include "components/form_field.html" with field=form.designation %}
+    </div>
+
+    {% if is_create %}
+    <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+      {% include "components/form_field.html" with field=form.password1 %}
+      {% include "components/form_field.html" with field=form.password2 %}
+    </div>
+    {% endif %}
+
+    {% include "components/form_field.html" with field=form.roles %}
+
+    <div class="mb-4 flex flex-wrap gap-6">
+      {% include "components/form_field.html" with field=form.is_active wrapper_class="" %}
+      {% include "components/form_field.html" with field=form.is_staff wrapper_class="" %}
+      {% include "components/form_field.html" with field=form.must_change_password wrapper_class="" %}
+    </div>
+
+    <div class="flex items-center gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+        <i data-lucide="save" class="h-4 w-4"></i> {% trans "Save" %}
+      </button>
+      <a href="{% url 'accounts:user_list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+        {% trans "Cancel" %}
+      </a>
+    </div>
+  </form>
+</section>
+{% endblock %}

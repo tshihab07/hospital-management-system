@@ -1,0 +1,72 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ role.name }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounts:role_list' %}" class="hover:text-primary-600">{% trans "Roles" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ role.name }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ role.name }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ role.description|default:_("No description.") }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "accounts.change_role" as can_change %}
+    {% has_perm request.user "accounts.delete_role" as can_delete %}
+    {% if can_change %}
+    <a href="{% url 'accounts:role_update' role.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="pencil" class="h-4 w-4"></i> {% trans "Edit" %}
+    </a>
+    {% endif %}
+    {% if can_delete and not role.is_system %}
+    <a href="{% url 'accounts:role_delete' role.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-red-200 px-4 text-sm text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10">
+      <i data-lucide="trash-2" class="h-4 w-4"></i> {% trans "Delete" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Granted permissions" %}</h2>
+    <div class="mt-4 space-y-4">
+      {% for app_label, perms in permission_catalog.items %}
+        {% with granted=perms %}
+        <div>
+          <p class="mb-1.5 text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-300">{% trans app_label %}</p>
+          <div class="flex flex-wrap gap-1.5">
+            {% for perm in perms %}
+              {% if perm.pk in selected_perms %}
+              <span class="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">{{ perm.codename }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endwith %}
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Members" %} ({{ members|length }})</h2>
+    <ul class="mt-4 space-y-2">
+      {% for member in members %}
+      <li class="flex items-center gap-2">
+        <span class="grid h-8 w-8 place-items-center rounded-full bg-primary-500 text-[11px] font-semibold text-white">{{ member.initials }}</span>
+        <a href="{% url 'accounts:user_detail' member.pk %}" class="text-sm text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ member.get_full_name }}</a>
+      </li>
+      {% empty %}
+      <li class="text-sm text-slate-400">{% trans "No members yet." %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

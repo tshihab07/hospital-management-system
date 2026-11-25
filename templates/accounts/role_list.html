@@ -1,0 +1,78 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Roles & Permissions" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Roles & Permissions" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Roles & Permissions" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Define what each group of staff can do." %}</p>
+  </div>
+  {% has_perm request.user "accounts.add_role" as can_add %}
+  {% if can_add %}
+  <a href="{% url 'accounts:role_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+    <i data-lucide="shield-plus" class="h-4 w-4"></i> {% trans "Add role" %}
+  </a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex items-center gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <input type="search" name="q" value="{{ search }}" placeholder="{% trans 'Search roles…' %}"
+           class="h-10 w-full max-w-sm rounded-[10px] border border-slate-200 bg-page px-3 text-sm text-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="search" class="h-4 w-4"></i> {% trans "Search" %}
+    </button>
+  </form>
+
+  {% if roles %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Role" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Permissions" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Members" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for role in roles %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3">
+            <a href="{% url 'accounts:role_detail' role.pk %}" class="font-medium text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ role.name }}</a>
+            {% if role.is_system %}<span class="ml-2 inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800">{% trans "system" %}</span>{% endif %}
+            <p class="mt-0.5 max-w-md truncate text-xs text-slate-400">{{ role.description|default:"—" }}</p>
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ role.perm_count }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ role.users.count }}</td>
+          <td class="px-4 py-3 text-right">
+            {% has_perm request.user "accounts.change_role" as can_change %}
+            {% has_perm request.user "accounts.delete_role" as can_delete %}
+            {% if can_change %}
+            <a href="{% url 'accounts:role_update' role.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'Edit' %}"><i data-lucide="pencil" class="h-4 w-4"></i></a>
+            {% endif %}
+            {% if can_delete and not role.is_system %}
+            <a href="{% url 'accounts:role_delete' role.pk %}" class="ml-1 text-slate-400 hover:text-red-600" title="{% trans 'Delete' %}"><i data-lucide="trash-2" class="h-4 w-4"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="shield-check" title="No roles yet" message="Create a role to start assigning permissions." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

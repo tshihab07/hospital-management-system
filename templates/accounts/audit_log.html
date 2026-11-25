@@ -1,0 +1,75 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Audit Log" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Audit Log" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Audit Log" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Every login, mutation and access denial is recorded here." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="grid grid-cols-1 gap-3 border-b border-slate-100 p-4 dark:border-slate-800 sm:grid-cols-2 lg:grid-cols-5">
+    {% include "components/form_field.html" with field=filter_form.q wrapper_class="" %}
+    {% include "components/form_field.html" with field=filter_form.action wrapper_class="" %}
+    {% include "components/form_field.html" with field=filter_form.model_name wrapper_class="" %}
+    {% include "components/form_field.html" with field=filter_form.date_from wrapper_class="" %}
+    <div class="flex items-end gap-2">
+      {% include "components/form_field.html" with field=filter_form.date_to wrapper_class="flex-1" %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+        <i data-lucide="search" class="h-4 w-4"></i>
+      </button>
+    </div>
+  </form>
+
+  {% if entries %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "When" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "User" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Action" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Model" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Object" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "IP" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for e in entries %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="whitespace-nowrap px-4 py-3 text-slate-500 dark:text-slate-400">{{ e.created_at|ihms_datetime }}</td>
+          <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ e.user.get_full_name|default:"—" }}</td>
+          <td class="px-4 py-3">
+            {% if e.action == "create" %}{% status_badge e.get_action_display "success" %}
+            {% elif e.action == "delete" %}{% status_badge e.get_action_display "danger" %}
+            {% elif e.action == "denied" %}{% status_badge e.get_action_display "warning" %}
+            {% elif e.action == "login" %}{% status_badge e.get_action_display "info" %}
+            {% else %}{% status_badge e.get_action_display "neutral" %}{% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ e.model_name|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'accounts:audit_detail' e.pk %}" class="text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ e.object_repr|default:"—"|truncatechars:48 }}</a>
+          </td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ e.ip_address|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="px-4 pb-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="history" title="No audit entries" message="Activity will show up here as users work in the system." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

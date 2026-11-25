@@ -1,0 +1,55 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "My Profile" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "My Profile" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<h1 class="mb-6 font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "My Profile" %}</h1>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <aside class="rounded-2xl border border-slate-200 bg-surface p-6 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    {% if user.profile_photo %}
+      <img src="{{ user.profile_photo.url }}" alt="{{ user.display_name }}" class="mx-auto h-24 w-24 rounded-full object-cover">
+    {% else %}
+      <span class="mx-auto grid h-24 w-24 place-items-center rounded-full bg-primary-500 text-2xl font-bold text-white">{{ user.initials }}</span>
+    {% endif %}
+    <h2 class="mt-4 font-display text-lg font-bold text-slate-800 dark:text-slate-100">{{ user.display_name }}</h2>
+    <p class="text-sm text-slate-500 dark:text-slate-400">{{ user.designation|default:_("Staff") }}</p>
+    <dl class="mt-5 space-y-2 text-left text-sm">
+      <div class="flex justify-between"><dt class="text-slate-500">{% trans "Username" %}</dt><dd class="font-medium tabular">{{ user.username }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">{% trans "Email" %}</dt><dd class="font-medium">{{ user.email|default:"—" }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">{% trans "Phone" %}</dt><dd class="font-medium tabular">{{ user.phone|default:"—" }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">{% trans "Last login" %}</dt><dd class="font-medium">{{ user.last_login|ihms_datetime|default:"—" }}</dd></div>
+    </dl>
+    <a href="{% url 'accounts:password_change' %}" class="mt-5 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 text-sm font-medium text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="key-round" class="h-4 w-4"></i> {% trans "Change password" %}
+    </a>
+  </aside>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Edit details" %}</h2>
+    <form method="post" enctype="multipart/form-data" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {% csrf_token %}
+      {% for field in form %}
+      <div class="{% if field.name == 'profile_photo' %}sm:col-span-2{% endif %}">
+        <label for="{{ field.id_for_label }}" class="mb-1 block text-[13px] font-semibold text-slate-600 dark:text-slate-300">{{ field.label }}</label>
+        {{ field }}
+        {% for error in field.errors %}<p class="mt-1 text-xs text-red-600">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+      <div class="sm:col-span-2">
+        <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-5 text-sm font-semibold text-white hover:bg-primary-600">
+          <i data-lucide="save" class="h-4 w-4"></i> {% trans "Save changes" %}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounts:role_list' %}" class="hover:text-primary-600">{% trans "Roles" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ page_title }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ page_title }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Name the role and tick the permissions it grants." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-1">
+      <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        {% if form.non_field_errors %}
+        <div class="mb-4 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{{ form.non_field_errors }}</div>
+        {% endif %}
+        {% include "components/form_field.html" with field=form.name %}
+        {% include "components/form_field.html" with field=form.description wrapper_class="mb-0" %}
+      </section>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+          <i data-lucide="save" class="h-4 w-4"></i> {% trans "Save role" %}
+        </button>
+        <a href="{% url 'accounts:role_list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+      </div>
+    </div>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+      <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Permissions" %}</h2>
+      {% for error in form.permissions.errors %}<p class="mt-2 text-xs text-red-600">{{ error }}</p>{% endfor %}
+
+      <div class="mt-4 space-y-5">
+        {% for app_label, perms in permission_catalog.items %}
+        <div>
+          <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-300">{% trans app_label %}</p>
+          <div class="grid grid-cols-1 gap-1 sm:grid-cols-2">
+            {% for perm in perms %}
+            <label class="flex items-start gap-2 rounded-[10px] px-2 py-1.5 text-sm text-slate-600 hover:bg-muted dark:text-slate-300 dark:hover:bg-slate-800">
+              <input type="checkbox" name="permissions" value="{{ perm.pk }}" class="mt-0.5 rounded border-slate-300 text-primary-500 focus:ring-primary-500"
+                     {% if perm.pk in selected_perms %}checked{% endif %}>
+              <span><span class="block">{{ perm.name }}</span><span class="block text-[11px] text-slate-400">{{ perm.codename }}</span></span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</form>
+{% endblock %}
