@@ -1,0 +1,77 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Pharmacy" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Pharmacy" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Pharmacy & Inventory" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Stock, dispensing, expiry and purchasing overview." %}</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'pharmacy:dispense' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="pill" class="h-4 w-4"></i> {% trans "Dispense" %}</a>
+    <a href="{% url 'pharmacy:batch_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-muted dark:border-slate-700 dark:text-slate-200"><i data-lucide="package-plus" class="h-4 w-4"></i> {% trans "New batch" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Stock batches" value=dashboard.batch_count icon="package" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Expiring soon" value=dashboard.expiring_soon icon="calendar-clock" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Expired" value=dashboard.expired icon="alert-triangle" accent="#EF4444" %}
+  {% include "components/kpi_card.html" with label="Low stock" value=dashboard.low_stock icon="trending-down" accent="#F97316" %}
+  {% include "components/kpi_card.html" with label="Open POs" value=dashboard.open_pos icon="clipboard-list" accent="#0EA5E9" %}
+  {% include "components/kpi_card.html" with label="Pending requisitions" value=dashboard.pending_requisitions icon="file-clock" accent="#8B5CF6" %}
+  {% include "components/kpi_card.html" with label="Dispensed today" value=dashboard.dispensed_today icon="check-circle" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Stores" value=dashboard.store_count icon="store" accent="#64748B" %}
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Expiring soon" %}</h2>
+      <a href="{% url 'pharmacy:expiry_alerts' %}" class="text-xs text-primary-600 hover:underline">{% trans "View all" %}</a>
+    </header>
+    <table class="w-full text-left text-sm">
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for b in expiring %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3">{{ b.drug }}</td>
+          <td class="px-4 py-3 font-mono text-xs">{{ b.batch_no }}</td>
+          <td class="px-4 py-3">{{ b.expiry_date|ihms_date }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ b.quantity }}</td>
+        </tr>
+        {% empty %}
+        <tr><td class="px-4 py-8 text-center text-slate-500">{% trans "Nothing expiring." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Low stock" %}</h2>
+      <a href="{% url 'pharmacy:low_stock' %}" class="text-xs text-primary-600 hover:underline">{% trans "View all" %}</a>
+    </header>
+    <table class="w-full text-left text-sm">
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in low_stock %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3">{{ row.name }}{% if row.brand %} <span class="text-slate-400">({{ row.brand }})</span>{% endif %}</td>
+          <td class="px-4 py-3 text-right tabular text-amber-600">{{ row.available }} / {{ row.reorder_level }}</td>
+        </tr>
+        {% empty %}
+        <tr><td class="px-4 py-8 text-center text-slate-500">{% trans "All items above reorder level." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

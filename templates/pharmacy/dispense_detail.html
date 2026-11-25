@@ -1,0 +1,55 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Dispense" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dispense' %}" class="text-primary-600 hover:underline">{% trans "Dispensing" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ record.pk }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Dispense record" %} #{{ record.pk }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ record.patient.display_name }} · {{ record.store.name }} · {{ record.dispensed_at|ihms_datetime }}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Drug" %}</th>
+          <th class="px-4 py-3">{% trans "Batch" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Qty" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Unit price" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Total" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for it in items %}
+        <tr>
+          <td class="px-4 py-3">{{ it.drug }}</td>
+          <td class="px-4 py-3 font-mono text-xs">{{ it.batch.batch_no }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ it.quantity }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ it.unit_price|bdt }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ it.total|bdt }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">{% trans "No items." %}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr class="border-t border-slate-200 dark:border-slate-700">
+          <td colspan="4" class="px-4 py-3 text-right font-medium">{% trans "Total" %}</td>
+          <td class="px-4 py-3 text-right font-semibold tabular">{{ record.total_amount|bdt }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>
+{% endblock %}

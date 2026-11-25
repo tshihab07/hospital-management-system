@@ -1,0 +1,73 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Dispense" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dispense' %}" class="text-primary-600 hover:underline">{% trans "Dispensing" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "New" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Dispense prescription" %} #{{ prescription.pk }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ prescription.patient.display_name }}{% if prescription.doctor %} · {{ prescription.doctor }}{% endif %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="space-y-6">
+  {% csrf_token %}
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.store.label }}</label>
+        {{ form.store }}
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-medium text-slate-500">{{ form.notes.label }}</label>
+        {{ form.notes }}
+      </div>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Prescribed drugs" %}</h2>
+    </header>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+          <tr>
+            <th class="px-4 py-3">{% trans "Drug" %}</th>
+            <th class="px-4 py-3">{% trans "Dosage" %}</th>
+            <th class="px-4 py-3">{% trans "Duration" %}</th>
+            <th class="px-4 py-3 w-32">{% trans "Qty to dispense" %}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for item in items %}
+          <tr>
+            <td class="px-4 py-3">{{ item.drug }}</td>
+            <td class="px-4 py-3">{{ item.dose|default:"—" }}</td>
+            <td class="px-4 py-3">{% if item.duration_days %}{{ item.duration_days }} {% trans "days" %}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3">
+              <input type="number" min="0" name="qty_{{ item.pk }}" value="{% if item.duration_days and item.duration_days > 1 %}{{ item.duration_days }}{% else %}1{% endif %}" class="h-10 w-24 rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">{% trans "No drugs on this prescription." %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="flex justify-end gap-2">
+    <a href="{% url 'pharmacy:dispense' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-muted dark:border-slate-700 dark:text-slate-200">{% trans "Cancel" %}</a>
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="check" class="h-4 w-4"></i> {% trans "Dispense (FIFO)" %}</button>
+  </div>
+</form>
+{% endblock %}

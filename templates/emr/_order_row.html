@@ -1,0 +1,31 @@
+{% load i18n ihms_tags %}
+<div class="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-slate-100 px-3 py-2 text-sm dark:border-slate-800">
+  <div class="text-slate-700 dark:text-slate-200">
+    {% if kind == "procedure" %}{{ order.procedure.name }}
+    {% else %}{% for item in order.items.all %}{{ item.test }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+    <span class="ml-1 text-xs text-slate-400">#{{ order.pk }} · {{ order.get_priority_display }}</span>
+  </div>
+  <div class="flex items-center gap-2">
+    {% if order.status == "completed" %}{% status_badge order.get_status_display "success" %}
+    {% elif order.status == "cancelled" %}{% status_badge order.get_status_display "danger" %}
+    {% elif order.status == "in_progress" %}{% status_badge order.get_status_display "info" %}
+    {% else %}{% status_badge order.get_status_display "warning" %}{% endif %}
+
+    {% if kind == "procedure" %}{% has_perm request.user "emr.change_procedureorder" as order_can %}
+    {% elif kind == "radiology" %}{% has_perm request.user "emr.change_radiologyorder" as order_can %}
+    {% else %}{% has_perm request.user "emr.change_laborder" as order_can %}{% endif %}
+
+    {% if order_can %}
+    <form method="post" action="{% url 'emr:order_status' kind order.pk %}" class="flex items-center gap-1">
+      {% csrf_token %}
+      <select name="status" class="h-8 rounded-md border border-slate-200 bg-transparent px-2 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300">
+        <option value="ordered" {% if order.status == "ordered" %}selected{% endif %}>{% trans "Ordered" %}</option>
+        <option value="in_progress" {% if order.status == "in_progress" %}selected{% endif %}>{% trans "In progress" %}</option>
+        <option value="completed" {% if order.status == "completed" %}selected{% endif %}>{% trans "Completed" %}</option>
+        <option value="cancelled" {% if order.status == "cancelled" %}selected{% endif %}>{% trans "Cancelled" %}</option>
+      </select>
+      <button class="rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Set" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>

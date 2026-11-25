@@ -1,0 +1,66 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Code Blue" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'icu:emergency_list' %}" class="hover:text-primary-600">{% trans "Emergency" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Code Blue" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Code Blue" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Emergency broadcast log for on-duty staff." %}</p>
+  </div>
+  <a href="{% url 'icu:code_blue_raise' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"><i data-lucide="siren" class="h-4 w-4"></i> {% trans "Call Code Blue" %}</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if code_blues %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Location" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Called" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "By" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Notified" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for cb in code_blues %}
+        <tr class="{% if cb.status == 'active' %}bg-red-50/60 dark:bg-red-500/5{% endif %}">
+          <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ cb.location }}</td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ cb.called_at|ihms_datetime }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ cb.called_by|default:"—" }}</td>
+          <td class="px-4 py-3 tabular text-slate-600 dark:text-slate-300">{{ cb.notified_count }}</td>
+          <td class="px-4 py-3">{% status_badge cb.get_status_display cb.status %}</td>
+          <td class="px-4 py-3 text-right">
+            {% if cb.status == "active" %}
+            {% has_perm request.user "icu.resolve_codebluealert" as can_resolve %}
+            {% if can_resolve %}
+            <form method="post" action="{% url 'icu:code_blue_resolve' cb.pk %}">{% csrf_token %}
+              <button class="rounded-lg bg-emerald-600 px-2.5 py-1 text-xs text-white hover:bg-emerald-700">{% trans "Resolve" %}</button>
+            </form>
+            {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="siren" title="No Code Blue alerts" message="Code Blue activations will be logged here." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Purchase orders" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Pharmacy" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Purchase orders" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Purchase orders" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Order drugs from vendors." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <h2 class="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "New purchase order" %}</h2>
+  <form method="post" action="{% url 'pharmacy:po_list' %}" class="space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ form.vendor.label }}</label>{{ form.vendor }}</div>
+      <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ form.store.label }}</label>{{ form.store }}</div>
+      <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ form.notes.label }}</label>{{ form.notes }}</div>
+    </div>
+    <div class="space-y-2">
+      {% for i in "123" %}
+      <div class="flex items-center gap-3">
+        <select name="drug" class="h-10 flex-1 rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+          <option value="">{% trans "Select drug" %}</option>
+          {% for d in drugs %}<option value="{{ d.pk }}">{{ d }}</option>{% endfor %}
+        </select>
+        <input type="number" name="quantity" min="0" placeholder="{% trans 'Qty' %}" class="h-10 w-24 rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <input type="number" step="0.01" name="unit_price" min="0" placeholder="{% trans 'Price' %}" class="h-10 w-28 rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+      </div>
+      {% endfor %}
+    </div>
+    <div class="flex justify-end"><button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Create PO" %}</button></div>
+  </form>
+</section>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "PO number" %}</th>
+          <th class="px-4 py-3">{% trans "Vendor" %}</th>
+          <th class="px-4 py-3">{% trans "Date" %}</th>
+          <th class="px-4 py-3">{% trans "Status" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Total" %}</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for po in orders %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3 font-mono text-xs">{{ po.po_number }}</td>
+          <td class="px-4 py-3">{{ po.vendor.name }}</td>
+          <td class="px-4 py-3">{{ po.order_date|ihms_date }}</td>
+          <td class="px-4 py-3">{% status_badge po.get_status_display "info" %}</td>
+          <td class="px-4 py-3 text-right tabular">{{ po.total_amount|bdt }}</td>
+          <td class="px-4 py-3 text-right"><a href="{% url 'pharmacy:po_detail' po.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "View" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">{% trans "No purchase orders yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

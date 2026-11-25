@@ -1,0 +1,105 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "ICU chart" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'icu:record_list' %}" class="hover:text-primary-600">{% trans "ICU / CCU" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ admission.patient.display_name }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ admission.patient.display_name }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+      {{ admission.patient.uhid }} · {{ admission.ip_number|default:"—" }} · {{ admission.bed|default:"—" }}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "icu.add_criticalscore" as can_score %}
+    {% if can_score %}
+    <a href="{% url 'icu:score_create' admission.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="gauge" class="h-4 w-4"></i> {% trans "Score" %}</a>
+    {% endif %}
+    {% has_perm request.user "icu.add_icurecord" as can_chart %}
+    {% if can_chart %}
+    <a href="{% url 'icu:record_create' admission.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Chart entry" %}</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if scores %}
+<section class="mb-6 flex flex-wrap gap-3">
+  {% for score in scores %}
+  <div class="rounded-xl border border-slate-200 bg-surface px-4 py-2 text-sm dark:border-slate-800 dark:bg-slate-900">
+    <span class="text-slate-500 dark:text-slate-400">{{ score.get_score_type_display }}</span>
+    <span class="ml-2 font-display text-lg font-bold text-slate-800 dark:text-slate-100">{{ score.score_value }}</span>
+    <span class="ml-2 text-xs text-slate-400">{{ score.calculated_at|ihms_datetime }}</span>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Charting history" %}</div>
+  {% if records %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Time" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Temp" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Pulse" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "RR" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "BP" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "SpO₂" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "GCS" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Vent" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "I/O" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "By" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for record in records %}
+        <tr class="{% if record.critical_findings %}bg-red-50/60 dark:bg-red-500/5{% endif %}">
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ record.recorded_at|ihms_datetime }}</td>
+          <td class="px-4 py-3 tabular">{{ record.temperature|default:"—" }}</td>
+          <td class="px-4 py-3 tabular">{{ record.pulse|default:"—" }}</td>
+          <td class="px-4 py-3 tabular">{{ record.respiratory_rate|default:"—" }}</td>
+          <td class="px-4 py-3 tabular">{{ record.bp_display }}</td>
+          <td class="px-4 py-3 tabular">{{ record.spo2|default:"—" }}</td>
+          <td class="px-4 py-3 tabular">{{ record.gcs|default:"—" }}</td>
+          <td class="px-4 py-3">{{ record.get_ventilator_mode_display|default:"—" }}</td>
+          <td class="px-4 py-3 tabular">{{ record.intake_ml|default:0 }}/{{ record.output_ml|default:0 }}</td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ record.charted_by|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="activity" title="No charts yet" message="Chart the first hourly ICU entry for this patient." %}</div>
+  {% endif %}
+</section>
+
+{% if alerts %}
+<section class="mt-6 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Alert history" %}</div>
+  <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+    {% for alert in alerts %}
+    <li class="flex items-center justify-between gap-3 px-4 py-3">
+      <span class="text-slate-700 dark:text-slate-200">{{ alert.parameter }} = {{ alert.value }}</span>
+      <span class="flex items-center gap-3 text-xs text-slate-400">
+        {{ alert.created_at|ihms_datetime }}
+        {% status_badge alert.get_status_display alert.status %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

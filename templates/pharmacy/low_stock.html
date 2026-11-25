@@ -1,0 +1,49 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Low stock" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Pharmacy" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Low stock" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Low stock / reorder" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Available (non-expired) quantity below reorder level." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Drug" %}</th>
+          <th class="px-4 py-3">{% trans "Unit" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Available" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Reorder level" %}</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in rows %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3">{{ row.name }}{% if row.brand %} <span class="text-slate-400">({{ row.brand }})</span>{% endif %}</td>
+          <td class="px-4 py-3">{{ row.unit|default:"—" }}</td>
+          <td class="px-4 py-3 text-right tabular text-amber-600">{{ row.available }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ row.reorder_level }}</td>
+          <td class="px-4 py-3 text-right"><a href="{% url 'pharmacy:requisition_list' %}" class="text-xs text-primary-600 hover:underline">{% trans "Raise requisition" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">{% trans "All items are above reorder level." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

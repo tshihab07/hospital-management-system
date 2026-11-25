@@ -1,0 +1,44 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "SOAP Templates" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "SOAP templates" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "SOAP Templates" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Reusable documentation starters for common presentations." %}</p>
+  </div>
+  {% has_perm request.user "emr.add_soaptemplate" as can_add %}
+  {% if can_add %}
+  <a href="{% url 'emr:soap_template_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+    <i data-lucide="plus" class="h-4 w-4"></i> {% trans "New template" %}
+  </a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if templates %}
+  <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+    {% for t in templates %}
+    <li class="p-4">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ t.name }}</p>
+        {% if t.is_active %}{% status_badge "Active" "success" %}{% else %}{% status_badge "Inactive" "neutral" %}{% endif %}
+      </div>
+      {% if t.chief_complaint %}<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ t.chief_complaint|truncatechars:120 }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="p-6">{% include "components/empty_state.html" with icon="file-text" title="No SOAP templates" message="Create templates to speed up documentation." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

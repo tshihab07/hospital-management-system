@@ -1,0 +1,79 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Radiology order" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'lab:radiology_list' %}" class="text-primary-600 hover:underline">{% trans "Radiology" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ order.pk }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Radiology order" %} #{{ order.pk }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ order.patient.display_name }} · {{ order.patient.uhid }} · {{ order.doctor.name_en }}</p>
+  </div>
+  {% if record %}
+    {% status_badge record.get_status_display "info" %}
+  {% else %}
+    {% status_badge _("Not started") "neutral" %}
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Requested studies" %}</h2>
+    <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+      {% for item in order.items.all %}
+      <li class="flex items-center justify-between py-2"><span>{{ item.test.get_modality_display }} · {{ item.test.name }}</span><span class="text-slate-400">{{ item.test.price|bdt }}</span></li>
+      {% endfor %}
+    </ul>
+    {% if order.clinical_indication %}<p class="mt-3 text-sm text-slate-600 dark:text-slate-300"><strong>{% trans "Indication" %}:</strong> {{ order.clinical_indication }}</p>{% endif %}
+    {% if record %}
+    <dl class="mt-4 space-y-2 text-sm">
+      <div class="flex justify-between"><dt class="text-slate-500">{% trans "Report #" %}</dt><dd class="font-mono">{{ record.report_no }}</dd></div>
+      <div class="flex justify-between"><dt class="text-slate-500">{% trans "Scheduled" %}</dt><dd>{% if record.scheduled_at %}{{ record.scheduled_at|ihms_datetime }}{% else %}—{% endif %}</dd></div>
+      {% if record.attachment %}<div class="flex justify-between"><dt class="text-slate-500">{% trans "File" %}</dt><dd><a href="{{ record.attachment.url }}" target="_blank" class="text-primary-600 hover:underline">{% trans "View" %}</a></dd></div>{% endif %}
+      {% if record.verified_at %}<div class="flex justify-between"><dt class="text-slate-500">{% trans "Verified" %}</dt><dd>{{ record.verified_at|ihms_datetime }}</dd></div>{% endif %}
+    </dl>
+    {% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Workflow" %}</h2>
+    <form method="post" action="{% url 'lab:radiology_action' order.pk 'schedule' %}" class="mb-4 space-y-2">{% csrf_token %}
+      {{ schedule_form.scheduled_at }}
+      <button class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="calendar-clock" class="h-4 w-4"></i> {% trans "Schedule" %}</button>
+    </form>
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'lab:radiology_action' order.pk 'report' %}" class="space-y-3">{% csrf_token %}
+      <div>{{ report_form.findings }}</div>
+      <div>{{ report_form.impression }}</div>
+      <div>{{ report_form.radiologist }}</div>
+      <div>{{ report_form.attachment }}</div>
+      <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="file-text" class="h-4 w-4"></i> {% trans "Save report" %}</button>
+    </form>
+
+    {% if record %}
+    <div class="mt-4 flex flex-wrap gap-2">
+      <form method="post" action="{% url 'lab:radiology_action' order.pk 'verify' %}">{% csrf_token %}
+        <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"><i data-lucide="check-check" class="h-4 w-4"></i> {% trans "Verify" %}</button>
+      </form>
+      {% if record.verified_at and not record.is_released %}
+      <form method="post" action="{% url 'lab:radiology_action' order.pk 'release' %}">{% csrf_token %}
+        <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="send" class="h-4 w-4"></i> {% trans "Release" %}</button>
+      </form>
+      {% endif %}
+      {% if record.is_released %}<span class="self-center text-sm text-emerald-600">{% trans "Released" %}</span>{% endif %}
+    </div>
+    {% if record.findings %}<div class="mt-4 text-sm"><h3 class="font-semibold text-slate-700 dark:text-slate-200">{% trans "Findings" %}</h3><p class="text-slate-600 dark:text-slate-300">{{ record.findings }}</p></div>{% endif %}
+    {% if record.impression %}<div class="mt-2 text-sm"><h3 class="font-semibold text-slate-700 dark:text-slate-200">{% trans "Impression" %}</h3><p class="text-slate-600 dark:text-slate-300">{{ record.impression }}</p></div>{% endif %}
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

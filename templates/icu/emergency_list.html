@@ -1,0 +1,98 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Emergency" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Emergency" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Emergency" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Casualty triage and live queue board." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'icu:code_blue_raise' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700">
+      <i data-lucide="siren" class="h-4 w-4"></i> {% trans "Call Code Blue" %}
+    </a>
+    {% has_perm request.user "icu.add_emergencycase" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'icu:emergency_register' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="plus" class="h-4 w-4"></i> {% trans "Register case" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-5">
+  {% include "components/kpi_card.html" with label="Open cases" value=kpis.open_cases icon="clipboard-list" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Waiting" value=kpis.waiting icon="hourglass" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Red triage" value=kpis.red icon="siren" accent="#EF4444" %}
+  {% include "components/kpi_card.html" with label="Arrivals today" value=kpis.arrivals_today icon="calendar-plus" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Longest wait (min)" value=kpis.longest_wait icon="timer" accent="#8B5CF6" %}
+</div>
+
+{% if active_code_blues %}
+<div class="mb-6 flex items-center gap-3 rounded-2xl border border-red-300 bg-red-50 p-4 text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-300">
+  <i data-lucide="siren" class="h-5 w-5 animate-pulse-dot"></i>
+  <span class="font-semibold">{{ active_code_blues }} {% trans "active Code Blue — respond now" %}</span>
+  <a href="{% url 'icu:code_blue_list' %}" class="ml-auto text-sm underline">{% trans "View" %}</a>
+</div>
+{% endif %}
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-40">{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
+    <div class="w-44">{{ filter_form.triage.label_tag }}{{ filter_form.triage }}</div>
+    <div class="w-64">{{ filter_form.search.label_tag }}{{ filter_form.search }}</div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+  </form>
+
+  {% if cases %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Case" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Complaint" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Triage" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Wait" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Doctor" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for case in cases %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-200">
+            <a href="{% url 'icu:emergency_detail' case.pk %}" class="text-primary-600 hover:underline">{{ case.case_no }}</a>
+          </td>
+          <td class="px-4 py-3">{{ case.patient.display_name }}<span class="ml-1 font-mono text-xs text-slate-400">{{ case.patient.uhid }}</span></td>
+          <td class="max-w-xs truncate px-4 py-3 text-slate-600 dark:text-slate-300">{{ case.complaint|truncatechars:60 }}</td>
+          <td class="px-4 py-3">
+            {% if case.triage_level == "red" %}{% status_badge case.get_triage_level_display "critical" %}
+            {% elif case.triage_level == "orange" %}{% status_badge case.get_triage_level_display "danger" %}
+            {% elif case.triage_level == "yellow" %}{% status_badge case.get_triage_level_display "warning" %}
+            {% elif case.triage_level == "green" %}{% status_badge case.get_triage_level_display "success" %}
+            {% else %}{% status_badge case.get_triage_level_display "info" %}{% endif %}
+          </td>
+          <td class="px-4 py-3 tabular text-slate-600 dark:text-slate-300">{{ case.wait_minutes }}m</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ case.attending_doctor|default:"—" }}</td>
+          <td class="px-4 py-3">{% status_badge case.get_status_display case.status %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="siren" title="Queue is clear" message="No open emergency cases match the filter." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

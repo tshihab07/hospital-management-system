@@ -1,0 +1,13 @@
+{% load i18n %}
+<tr class="rx-row border-b border-slate-100 dark:border-slate-800">
+  {% for hidden in item_form.hidden_fields %}{{ hidden }}{% endfor %}
+  <td class="px-2 py-2">{{ item_form.drug }}{{ item_form.drug.errors }}</td>
+  <td class="px-2 py-2">{{ item_form.dose }}{{ item_form.dose.errors }}</td>
+  <td class="px-2 py-2">{{ item_form.route }}</td>
+  <td class="px-2 py-2">{{ item_form.frequency }}{{ item_form.frequency.errors }}</td>
+  <td class="px-2 py-2">{{ item_form.duration_days }}</td>
+  <td class="px-2 py-2">{{ item_form.quantity }}</td>
+  <td class="px-2 py-2 text-center">{{ item_form.is_prn }}</td>
+  <td class="px-2 py-2">{{ item_form.instructions }}</td>
+  <td class="px-2 py-2 text-center">{{ item_form.DELETE }}</td>
+</tr>

@@ -1,0 +1,87 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'patients:detail' patient.pk %}" class="hover:text-primary-600">{{ patient.display_name }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "EMR timeline" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ patient.display_name }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ patient.uhid }} · {{ patient.get_gender_display }}{% if patient.age %} · {{ patient.age }} {% trans "yrs" %}{% endif %}{% if patient.blood_group %} · {{ patient.get_blood_group_display }}{% endif %} · {{ patient.phone }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "emr.add_encounter" as can_add %}
+    {% if can_add %}<a href="{% url 'emr:encounter_open' %}?patient={{ patient.pk }}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Open encounter" %}</a>{% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2">
+    <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Medical history" %}</h2>
+    {% if timeline %}
+    <ol class="relative space-y-4 border-l border-slate-200 pl-6 dark:border-slate-800">
+      {% for event in timeline %}
+      <li class="relative">
+        <span class="absolute -left-[31px] grid h-6 w-6 place-items-center rounded-full bg-surface ring-2 ring-slate-200 dark:bg-slate-900 dark:ring-slate-700">
+          <i data-lucide="{{ event.icon }}" class="h-3.5 w-3.5 text-slate-500 dark:text-slate-300"></i>
+        </span>
+        <div class="rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center justify-between gap-2">
+            {% if event.url_name %}
+            <a href="{% url event.url_name event.url_pk %}" class="text-sm font-medium text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ event.title }}</a>
+            {% else %}
+            <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ event.title }}</p>
+            {% endif %}
+            {% status_badge event.kind event.variant %}
+          </div>
+          {% if event.detail %}<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ event.detail }}</p>{% endif %}
+          <p class="mt-1 text-xs text-slate-400">{{ event.at|date:"d M Y H:i" }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    {% include "components/empty_state.html" with icon="history" title="No history yet" message="Encounters, prescriptions and orders will appear here." %}
+    {% endif %}
+  </section>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Problem list" %}</h2>
+        <a href="{% url 'emr:problem_list' patient.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "Manage" %}</a>
+      </div>
+      {% for p in problems %}<p class="py-1 text-sm text-slate-600 dark:text-slate-300">{{ p.description }}</p>
+      {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">{% trans "None recorded." %}</p>{% endfor %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Allergies" %}</h2>
+        <a href="{% url 'emr:allergy_list' patient.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "Manage" %}</a>
+      </div>
+      {% for a in allergies %}<p class="py-1 text-sm text-slate-600 dark:text-slate-300">{{ a.allergen }} · {{ a.get_severity_display }}</p>
+      {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">{% trans "None recorded." %}</p>{% endfor %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Recent vitals" %}</h2>
+        <a href="{% url 'emr:attachment_list' patient.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "Attachments" %}</a>
+      </div>
+      {% for v in vitals %}
+      <p class="py-1 text-sm text-slate-600 dark:text-slate-300">{{ v.recorded_at|date:"d M H:i" }} · BP {{ v.bp_display }} · {{ v.pulse|default:"—" }} {% trans "bpm" %}</p>
+      {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">{% trans "None recorded." %}</p>{% endfor %}
+    </section>
+  </div>
+</div>
+{% endblock %}

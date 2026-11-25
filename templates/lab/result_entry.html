@@ -1,0 +1,68 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Enter results" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'lab:order_list' %}" class="text-primary-600 hover:underline">{% trans "Laboratory" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'lab:order_detail' order.pk %}" class="text-primary-600 hover:underline">#{{ order.pk }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Results" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Enter results" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ order.patient.display_name }} · {% trans "order" %} #{{ order.pk }}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Test" %}</th>
+          <th class="px-4 py-3">{% trans "Reference" %}</th>
+          <th class="px-4 py-3">{% trans "Current" %}</th>
+          <th class="px-4 py-3">{% trans "Entry" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in rows %}
+        <tr>
+          <td class="px-4 py-3">{{ row.item.test.name }}<div class="text-xs text-slate-400">{{ row.item.test.unit }}</div></td>
+          <td class="px-4 py-3 text-xs text-slate-500">{{ row.item.test.reference_range|default:"—" }}</td>
+          <td class="px-4 py-3">
+            {% if row.result %}
+              {{ row.result.value }} {% if row.result.flag == "normal" %}{% status_badge row.result.get_flag_display "success" %}{% else %}{% status_badge row.result.get_flag_display "danger" %}{% endif %}
+              {% if row.result.is_verified %}<div class="text-xs text-emerald-600">{% trans "Verified" %}</div>{% endif %}
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if row.result.is_verified %}
+              <form method="post" action="{% url 'lab:result_addendum' row.result.pk %}" class="flex items-center gap-2">{% csrf_token %}
+                <input type="text" name="text" placeholder="{% trans 'Addendum' %}" class="h-9 w-44 rounded-[10px] border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700">
+                <button class="text-xs text-amber-600 hover:underline">{% trans "Add" %}</button>
+              </form>
+            {% else %}
+              <form method="post" class="flex flex-wrap items-center gap-2">{% csrf_token %}
+                <input type="hidden" name="item_id" value="{{ row.item.pk }}">
+                {{ row.form.value }}
+                {{ row.form.flag }}
+                <button class="inline-flex h-9 items-center gap-1 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="save" class="h-4 w-4"></i> {% trans "Save" %}</button>
+              </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-10 text-center text-slate-500">{% trans "This order has no tests." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

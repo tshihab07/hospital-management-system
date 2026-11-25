@@ -1,0 +1,61 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Shift handover" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'icu:emergency_list' %}" class="hover:text-primary-600">{% trans "Emergency" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Handover" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Shift handover" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Structured handover notes for ICU and ER shifts." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <form method="get">
+      <select name="unit" onchange="this.form.submit()" class="rounded-[10px] border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <option value="" {% if not unit %}selected{% endif %}>{% trans "All units" %}</option>
+        <option value="icu" {% if unit == "icu" %}selected{% endif %}>{% trans "ICU / CCU" %}</option>
+        <option value="er" {% if unit == "er" %}selected{% endif %}>{% trans "Emergency" %}</option>
+      </select>
+    </form>
+    <a href="{% url 'icu:handover_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "New note" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="space-y-3">
+  {% for note in notes %}
+  <article class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+      <span class="inline-flex items-center gap-2">
+        {% status_badge note.get_unit_display "info" %}
+        <span>{{ note.get_shift_display }} · {{ note.handover_date }}</span>
+      </span>
+      <span>{{ note.handed_over_by|default:"—" }} → {{ note.handover_to|default:"—" }}</span>
+    </div>
+    <p class="mt-3 text-sm text-slate-700 dark:text-slate-200">{{ note.summary }}</p>
+    {% if note.pending_tasks %}<p class="mt-2 text-sm text-amber-600 dark:text-amber-400">{% trans "Pending:" %} {{ note.pending_tasks }}</p>{% endif %}
+    <div class="mt-3 flex items-center justify-between">
+      <span class="text-xs {% if note.acknowledged %}text-emerald-600{% else %}text-slate-400{% endif %}">
+        {{ note.acknowledged|yesno:_("Acknowledged,Pending acknowledgement") }}
+      </span>
+      {% if not note.acknowledged %}
+      <form method="post" action="{% url 'icu:handover_acknowledge' note.pk %}">{% csrf_token %}
+        <button class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Acknowledge" %}</button>
+      </form>
+      {% endif %}
+    </div>
+  </article>
+  {% empty %}
+  {% include "components/empty_state.html" with icon="clipboard-check" title="No handover notes" message="Shift handover notes will appear here." %}
+  {% endfor %}
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "ER case" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'icu:emergency_list' %}" class="hover:text-primary-600">{% trans "Emergency" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ case.case_no|default:"—" }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ case.patient.display_name }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+      {{ case.case_no }} · {{ case.patient.uhid }} · {% trans "arrived" %} {{ case.arrival_time|ihms_datetime }}
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'icu:code_blue_raise' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700"><i data-lucide="siren" class="h-4 w-4"></i> {% trans "Code Blue" %}</a>
+    {% if case.is_open %}
+    <a href="{% url 'icu:emergency_convert' case.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="bed-double" class="h-4 w-4"></i> {% trans "Admit" %}</a>
+    <form method="post" action="{% url 'icu:emergency_discharge' case.pk %}">{% csrf_token %}
+      <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="log-out" class="h-4 w-4"></i> {% trans "Discharge" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="lg:col-span-2 space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Presentation" %}</h2>
+      <dl class="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+        <div><dt class="text-slate-400">{% trans "Temp" %}</dt><dd class="tabular">{{ case.temperature|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400">{% trans "Pulse" %}</dt><dd class="tabular">{{ case.pulse|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400">{% trans "RR" %}</dt><dd class="tabular">{{ case.respiratory_rate|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400">{% trans "SpO₂" %}</dt><dd class="tabular">{{ case.spo2|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400">{% trans "BP" %}</dt><dd class="tabular">{{ case.bp_systolic|default:"—" }}/{{ case.bp_diastolic|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400">{% trans "Triage" %}</dt><dd>{% status_badge case.get_triage_level_display case.triage_level %}</dd></div>
+        <div><dt class="text-slate-400">{% trans "Status" %}</dt><dd>{% status_badge case.get_status_display case.status %}</dd></div>
+        <div><dt class="text-slate-400">{% trans "Wait" %}</dt><dd class="tabular">{{ case.wait_minutes }}m</dd></div>
+      </dl>
+      <p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ case.complaint }}</p>
+      {% if case.notes %}<p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ case.notes }}</p>{% endif %}
+      {% if case.converted_admission_id %}
+      <p class="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{% trans "Admitted as" %} {{ case.converted_admission.ip_number|default:case.converted_admission_id }}</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Handover notes" %}</h2>
+      {% if handovers %}
+      <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+        {% for note in handovers %}
+        <li class="py-3">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>{{ note.get_shift_display }} · {{ note.handover_date }} · {{ note.handed_over_by|default:"—" }}</span>
+            <span>{{ note.acknowledged|yesno:_("Acknowledged,Pending") }}</span>
+          </div>
+          <p class="mt-1 text-slate-700 dark:text-slate-200">{{ note.summary }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-400">{% trans "No handover notes for the ER yet." %}</p>
+      {% endif %}
+      <a href="{% url 'icu:handover_create' %}" class="mt-3 inline-flex text-sm text-primary-600 hover:underline">{% trans "Add handover note" %}</a>
+    </section>
+  </div>
+
+  <aside class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Triage" %}</h2>
+      <form method="post" action="{% url 'icu:emergency_triage' case.pk %}">
+        {% csrf_token %}
+        {% include "components/form_field.html" with field=triage_form.triage_level %}
+        <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">{% trans "Update triage" %}</button>
+      </form>
+    </section>
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Disposition" %}</h2>
+      <form method="post" action="{% url 'icu:emergency_status' case.pk %}">
+        {% csrf_token %}
+        {% include "components/form_field.html" with field=status_form.status %}
+        <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">{% trans "Update status" %}</button>
+      </form>
+    </section>
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Code Blue" %}</h2>
+      {% if code_blues %}
+      <ul class="space-y-1 text-sm">
+        {% for cb in code_blues|slice:":3" %}
+        <li class="flex items-center justify-between"><span>{{ cb.location }}</span>{% status_badge cb.get_status_display cb.status %}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-400">{% trans "No Code Blue alerts." %}</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

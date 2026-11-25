@@ -1,0 +1,118 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Lab order" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'lab:order_list' %}" class="text-primary-600 hover:underline">{% trans "Laboratory" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ order.pk }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Lab order" %} #{{ order.pk }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ order.patient.display_name }} · {{ order.patient.uhid }} · {{ order.doctor.name_en }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% status_badge order.get_priority_display "warning" %}
+    {% status_badge order.get_status_display "info" %}
+    <a href="{% url 'lab:result_entry' order.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="pencil" class="h-4 w-4"></i> {% trans "Enter results" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Sample" %}</h2>
+    {% if sample %}
+      <dl class="space-y-2 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">{% trans "Barcode" %}</dt><dd class="font-mono">{{ sample.barcode }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">{% trans "Type" %}</dt><dd>{{ sample.sample_type|default:"—" }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">{% trans "Status" %}</dt><dd>{% status_badge sample.get_status_display "info" %}</dd></div>
+      </dl>
+      <div class="mt-4 flex flex-wrap gap-2">
+        {% if sample.status == "pending" %}
+          <form method="post" action="{% url 'lab:sample_action' sample.pk 'collect' %}">{% csrf_token %}
+            <button class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-emerald-500 px-3 text-sm font-medium text-white hover:bg-emerald-600"><i data-lucide="check" class="h-4 w-4"></i> {% trans "Collect" %}</button>
+          </form>
+        {% endif %}
+        {% if sample.status == "collected" %}
+          <form method="post" action="{% url 'lab:sample_action' sample.pk 'receive' %}">{% csrf_token %}
+            <button class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="inbox" class="h-4 w-4"></i> {% trans "Receive" %}</button>
+          </form>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="text-sm text-slate-500">{% trans "No sample yet." %}</p>
+      <form method="post" action="{% url 'lab:sample_create' order.pk %}" class="mt-3">{% csrf_token %}
+        <button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="barcode" class="h-4 w-4"></i> {% trans "Generate barcode" %}</button>
+      </form>
+    {% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm lg:col-span-2 dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-3 flex items-center justify-between">
+      <h2 class="font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Report" %}</h2>
+      {% if report %}
+        <a href="{% url 'lab:report_detail' order.pk %}" class="text-sm text-primary-600 hover:underline">{{ report.report_no }}</a>
+      {% else %}
+        <span class="text-sm text-slate-400">{% trans "Not generated" %}</span>
+      {% endif %}
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+          <tr>
+            <th class="px-3 py-2">{% trans "Test" %}</th>
+            <th class="px-3 py-2">{% trans "Value" %}</th>
+            <th class="px-3 py-2">{% trans "Reference" %}</th>
+            <th class="px-3 py-2">{% trans "Flag" %}</th>
+            <th class="px-3 py-2">{% trans "State" %}</th>
+            <th class="px-3 py-2"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for r in results %}
+          <tr>
+            <td class="px-3 py-2">{{ r.test.name }}</td>
+            <td class="px-3 py-2">{{ r.value }} {{ r.unit }}</td>
+            <td class="px-3 py-2 text-xs text-slate-500">{{ r.reference_range|default:"—" }}</td>
+            <td class="px-3 py-2">
+              {% if r.flag == "normal" %}{% status_badge r.get_flag_display "success" %}{% else %}{% status_badge r.get_flag_display "danger" %}{% endif %}
+            </td>
+            <td class="px-3 py-2">{% if r.is_verified %}{% status_badge _("Verified") "success" %}{% else %}{% status_badge _("Pending") "warning" %}{% endif %}</td>
+            <td class="px-3 py-2 text-right">
+              {% if not r.is_verified %}
+              <form method="post" action="{% url 'lab:result_verify' r.pk %}">{% csrf_token %}
+                <button class="text-xs text-primary-600 hover:underline">{% trans "Verify" %}</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% for a in r.addenda.all %}
+          <tr class="bg-amber-50/50 dark:bg-amber-900/10"><td colspan="6" class="px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{{ a.text }} <span class="text-slate-400">— {{ a.created_at|ihms_datetime }}</span></td></tr>
+          {% endfor %}
+          {% empty %}
+          <tr><td colspan="6" class="px-3 py-8 text-center text-slate-500">{% trans "No results entered yet." %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+{% if charges %}
+<section class="mt-6 rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Charges" %}</h2>
+  <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+    {% for c in charges %}
+    <li class="flex justify-between py-2"><span>{{ c.test.name }}</span><span>{{ c.amount|bdt }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

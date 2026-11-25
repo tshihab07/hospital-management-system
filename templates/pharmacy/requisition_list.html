@@ -1,0 +1,90 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Requisitions" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Pharmacy" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Requisitions" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Purchase requisitions" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Raise and approve internal purchase requests." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <h2 class="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "New requisition" %}</h2>
+  <form method="post" action="{% url 'pharmacy:requisition_list' %}" class="space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ form.store.label }}</label>{{ form.store }}</div>
+      <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ form.needed_by.label }}</label>{{ form.needed_by }}</div>
+      <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ form.notes.label }}</label>{{ form.notes }}</div>
+    </div>
+    <div class="space-y-2">
+      {% for i in "123" %}
+      <div class="flex items-center gap-3">
+        <select name="drug" class="h-10 flex-1 rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+          <option value="">{% trans "Select drug" %}</option>
+          {% for d in drugs %}<option value="{{ d.pk }}">{{ d }}</option>{% endfor %}
+        </select>
+        <input type="number" name="quantity" min="0" placeholder="{% trans 'Qty' %}" class="h-10 w-28 rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+      </div>
+      {% endfor %}
+    </div>
+    <div class="flex justify-end"><button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Create" %}</button></div>
+  </form>
+</section>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "PR number" %}</th>
+          <th class="px-4 py-3">{% trans "Store" %}</th>
+          <th class="px-4 py-3">{% trans "Status" %}</th>
+          <th class="px-4 py-3">{% trans "Needed by" %}</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for r in requisitions %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3 font-mono text-xs">{{ r.pr_number }}</td>
+          <td class="px-4 py-3">{{ r.store.name }}</td>
+          <td class="px-4 py-3">{% status_badge r.get_status_display "info" %}</td>
+          <td class="px-4 py-3">{{ r.needed_by|ihms_date|default:"—" }}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex justify-end gap-2">
+              {% if r.status == "draft" or r.status == "submitted" %}
+                <form method="post" action="{% url 'pharmacy:requisition_action' r.pk 'approve' %}">{% csrf_token %}<button class="text-xs text-emerald-600 hover:underline">{% trans "Approve" %}</button></form>
+                <form method="post" action="{% url 'pharmacy:requisition_action' r.pk 'reject' %}">{% csrf_token %}<button class="text-xs text-red-600 hover:underline">{% trans "Reject" %}</button></form>
+              {% endif %}
+              {% if r.status == "approved" %}
+              <form method="post" action="{% url 'pharmacy:requisition_action' r.pk 'convert' %}" class="flex items-center gap-1">
+                {% csrf_token %}
+                <select name="vendor" class="h-8 rounded-lg border border-slate-200 px-2 text-xs dark:border-slate-700 dark:bg-slate-800">
+                  <option value="">{% trans "Vendor…" %}</option>
+                  {% for v in vendors %}<option value="{{ v.pk }}">{{ v.name }}</option>{% endfor %}
+                </select>
+                <button class="text-xs text-primary-600 hover:underline">{% trans "Convert to PO" %}</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">{% trans "No requisitions yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

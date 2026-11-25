@@ -1,0 +1,84 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Encounters" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Encounters" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Clinical Encounters" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "SOAP notes, diagnoses, vitals and CPOE orders per visit." %}</p>
+  </div>
+  {% has_perm request.user "emr.add_encounter" as can_add %}
+  {% if can_add %}
+  <a href="{% url 'emr:encounter_open' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+    <i data-lucide="plus" class="h-4 w-4"></i> {% trans "Open encounter" %}
+  </a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+  {% include "components/kpi_card.html" with label="Total" value=summary.total icon="clipboard-list" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Open" value=summary.open icon="activity" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Closed" value=summary.closed icon="check-circle-2" accent="#10B981" %}
+</div>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-44">{{ filter_form.enc_date.label_tag }}{{ filter_form.enc_date }}</div>
+    <div class="w-52">{{ filter_form.doctor.label_tag }}{{ filter_form.doctor }}</div>
+    <div class="w-40">{{ filter_form.status.label_tag }}{{ filter_form.status }}</div>
+    <div class="w-40">{{ filter_form.encounter_type.label_tag }}{{ filter_form.encounter_type }}</div>
+    <div class="w-64">{{ filter_form.q.label_tag }}{{ filter_form.q }}</div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}
+    </button>
+  </form>
+
+  {% if encounters %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Date" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Doctor" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Type" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Chief complaint" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for enc in encounters %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ enc.encounter_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'emr:encounter_detail' enc.pk %}" class="font-medium text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ enc.patient.display_name }}</a>
+            <p class="font-mono text-xs text-slate-400">{{ enc.patient.uhid }}</p>
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ enc.doctor.name_en }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ enc.get_encounter_type_display }}</td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ enc.chief_complaint|default:"—"|truncatechars:60 }}</td>
+          <td class="px-4 py-3">
+            {% if enc.status == "open" %}{% status_badge enc.get_status_display "warning" %}{% else %}{% status_badge enc.get_status_display "success" %}{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="px-4 pb-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="stethoscope" title="No encounters found" message="Adjust the filters or open a new encounter." action_url="/emr/encounters/open/" action_label="Open encounter" %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

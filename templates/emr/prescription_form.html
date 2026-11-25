@@ -1,0 +1,80 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'emr:encounter_detail' encounter.pk %}" class="hover:text-primary-600">{% trans "Encounter" %} #{{ encounter.pk }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "New prescription" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "New Prescription" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ encounter.patient.display_name }} · {{ encounter.patient.uhid }} · {{ encounter.doctor.name_en }}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  {{ formset.management_form }}
+  {% if formset.non_form_errors %}
+  <div class="mb-4 rounded-[10px] border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">{{ formset.non_form_errors }}</div>
+  {% endif %}
+
+  <section class="overflow-hidden rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
+      <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Drugs" %}</h2>
+      <button type="button" onclick="emrAddRxRow()" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+        <i data-lucide="plus" class="h-4 w-4"></i> {% trans "Add row" %}
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+          <tr>
+            <th class="px-2 py-3 font-medium">{% trans "Drug" %}</th>
+            <th class="px-2 py-3 font-medium">{% trans "Dose" %}</th>
+            <th class="px-2 py-3 font-medium">{% trans "Route" %}</th>
+            <th class="px-2 py-3 font-medium">{% trans "Frequency" %}</th>
+            <th class="px-2 py-3 font-medium">{% trans "Days" %}</th>
+            <th class="px-2 py-3 font-medium">{% trans "Qty" %}</th>
+            <th class="px-2 py-3 font-medium">PRN</th>
+            <th class="px-2 py-3 font-medium">{% trans "Instructions" %}</th>
+            <th class="px-2 py-3 font-medium"></th>
+          </tr>
+        </thead>
+        <tbody id="rx-rows">
+          {% for item_form in formset %}{% include "emr/_prescription_row.html" with item_form=item_form %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <template id="rx-empty-row">{% include "emr/_prescription_row.html" with item_form=formset.empty_form %}</template>
+  </section>
+
+  <section class="mt-6 rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    {% include "components/form_field.html" with field=form.notes %}
+    <div class="flex items-center gap-2">
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+        <i data-lucide="pill" class="h-4 w-4"></i> {% trans "Issue prescription" %}
+      </button>
+      <a href="{% url 'emr:encounter_detail' encounter.pk %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+    </div>
+  </section>
+</form>
+
+<script>
+  function emrAddRxRow() {
+    var totalInput = document.getElementById('id_form-TOTAL_FORMS');
+    var index = parseInt(totalInput.value, 10);
+    var html = document.getElementById('rx-empty-row').innerHTML.replace(/__prefix__/g, index);
+    var wrapper = document.createElement('tbody');
+    wrapper.innerHTML = html;
+    document.getElementById('rx-rows').appendChild(wrapper.firstElementChild);
+    totalInput.value = index + 1;
+  }
+</script>
+{% endblock %}

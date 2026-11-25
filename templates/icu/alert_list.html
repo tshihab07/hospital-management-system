@@ -1,0 +1,81 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Critical alerts" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'icu:record_list' %}" class="hover:text-primary-600">{% trans "ICU / CCU" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Alerts" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex items-center justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Critical alerts" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Critical values detected from ICU charting." %}</p>
+  </div>
+  <form method="get">
+    <select name="status" onchange="this.form.submit()" class="rounded-[10px] border border-slate-200 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800">
+      <option value="" {% if not status %}selected{% endif %}>{% trans "All" %}</option>
+      <option value="active" {% if status == "active" %}selected{% endif %}>{% trans "Active" %}</option>
+      <option value="acknowledged" {% if status == "acknowledged" %}selected{% endif %}>{% trans "Acknowledged" %}</option>
+      <option value="resolved" {% if status == "resolved" %}selected{% endif %}>{% trans "Resolved" %}</option>
+    </select>
+  </form>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if alerts %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Parameter" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Value" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Severity" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Raised" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 font-medium"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for alert in alerts %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3">
+            <a href="{% url 'icu:admission_charts' alert.admission_id %}" class="font-medium text-primary-600 hover:underline">{{ alert.admission.patient.display_name }}</a>
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ alert.parameter }}</td>
+          <td class="px-4 py-3 tabular font-medium text-red-600 dark:text-red-400">{{ alert.value }}</td>
+          <td class="px-4 py-3">{% status_badge alert.get_severity_display alert.severity %}</td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ alert.created_at|ihms_datetime }}</td>
+          <td class="px-4 py-3">{% status_badge alert.get_status_display alert.status %}</td>
+          <td class="px-4 py-3 text-right">
+            <div class="flex items-center justify-end gap-2">
+              {% if alert.status == "active" %}
+              <form method="post" action="{% url 'icu:alert_acknowledge' alert.pk %}">{% csrf_token %}
+                <button class="rounded-lg border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Acknowledge" %}</button>
+              </form>
+              {% endif %}
+              {% if alert.status != "resolved" %}
+              <form method="post" action="{% url 'icu:alert_resolve' alert.pk %}">{% csrf_token %}
+                <button class="rounded-lg bg-primary-500 px-2.5 py-1 text-xs text-white hover:bg-primary-600">{% trans "Resolve" %}</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="bell-ring" title="No alerts" message="Critical values from ICU charting will appear here." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Expiry alerts" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Pharmacy" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Expiry alerts" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Expiry alerts" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% blocktrans %}Batches expiring within {{ days }} days, and already expired.{% endblocktrans %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <header class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+    <h2 class="text-sm font-semibold text-amber-600">{% trans "Expiring soon" %}</h2>
+  </header>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Drug" %}</th>
+          <th class="px-4 py-3">{% trans "Store" %}</th>
+          <th class="px-4 py-3">{% trans "Batch" %}</th>
+          <th class="px-4 py-3">{% trans "Expiry" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Days left" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Qty" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for b in expiring %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3"><a href="{% url 'pharmacy:batch_detail' b.pk %}" class="text-primary-600 hover:underline">{{ b.drug }}</a></td>
+          <td class="px-4 py-3">{{ b.store.name }}</td>
+          <td class="px-4 py-3 font-mono text-xs">{{ b.batch_no }}</td>
+          <td class="px-4 py-3">{{ b.expiry_date|ihms_date }}</td>
+          <td class="px-4 py-3 text-right tabular text-amber-600">{{ b.days_to_expiry }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ b.quantity }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">{% trans "Nothing expiring soon." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <header class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+    <h2 class="text-sm font-semibold text-red-600">{% trans "Expired (blocked from dispensing)" %}</h2>
+  </header>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Drug" %}</th>
+          <th class="px-4 py-3">{% trans "Store" %}</th>
+          <th class="px-4 py-3">{% trans "Batch" %}</th>
+          <th class="px-4 py-3">{% trans "Expiry" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Qty" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for b in expired %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3"><a href="{% url 'pharmacy:batch_detail' b.pk %}" class="text-primary-600 hover:underline">{{ b.drug }}</a></td>
+          <td class="px-4 py-3">{{ b.store.name }}</td>
+          <td class="px-4 py-3 font-mono text-xs">{{ b.batch_no }}</td>
+          <td class="px-4 py-3 text-red-600">{{ b.expiry_date|ihms_date }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ b.quantity }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">{% trans "No expired batches." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

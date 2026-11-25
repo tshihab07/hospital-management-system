@@ -1,0 +1,84 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Batch" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:stock_list' %}" class="text-primary-600 hover:underline">{% trans "Stock" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ batch.batch_no }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ batch.drug }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ batch.store.name }} · {% trans "Batch" %} {{ batch.batch_no }}{% if batch.expiry_date %} · {% trans "Expires" %} {{ batch.expiry_date|ihms_date }}{% endif %}</p>
+  </div>
+  <div class="rounded-xl border border-slate-200 px-4 py-2 text-center dark:border-slate-800">
+    <p class="text-xs uppercase text-slate-500">{% trans "On hand" %}</p>
+    <p class="font-display text-2xl font-bold tabular">{{ batch.quantity }}</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="space-y-6 lg:col-span-2">
+    <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <header class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Movement ledger" %}</h2>
+      </header>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+            <tr>
+              <th class="px-4 py-3">{% trans "When" %}</th>
+              <th class="px-4 py-3">{% trans "Type" %}</th>
+              <th class="px-4 py-3 text-right">{% trans "Change" %}</th>
+              <th class="px-4 py-3 text-right">{% trans "Balance" %}</th>
+              <th class="px-4 py-3">{% trans "Reference" %}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for m in movements %}
+            <tr>
+              <td class="px-4 py-3">{{ m.moved_at|ihms_datetime }}</td>
+              <td class="px-4 py-3">{% status_badge m.get_movement_type_display "info" %}</td>
+              <td class="px-4 py-3 text-right tabular {% if m.quantity < 0 %}text-red-600{% else %}text-emerald-600{% endif %}">{{ m.quantity }}</td>
+              <td class="px-4 py-3 text-right tabular">{{ m.balance_after }}</td>
+              <td class="px-4 py-3 text-xs text-slate-500">{{ m.reference|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">{% trans "No movements." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Adjust stock" %}</h2>
+      <form method="post" action="{% url 'pharmacy:batch_action' batch.pk 'adjust' %}" class="space-y-3">
+        {% csrf_token %}
+        <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ adjust_form.new_quantity.label }}</label>{{ adjust_form.new_quantity }}</div>
+        <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ adjust_form.reason.label }}</label>{{ adjust_form.reason }}</div>
+        <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="sliders" class="h-4 w-4"></i> {% trans "Adjust" %}</button>
+      </form>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Return to vendor" %}</h2>
+      <form method="post" action="{% url 'pharmacy:batch_action' batch.pk 'return' %}" class="space-y-3">
+        {% csrf_token %}
+        <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ return_form.quantity.label }}</label>{{ return_form.quantity }}</div>
+        <div><label class="mb-1 block text-xs font-medium text-slate-500">{{ return_form.notes.label }}</label>{{ return_form.notes }}</div>
+        <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-red-200 px-4 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-900/20"><i data-lucide="undo-2" class="h-4 w-4"></i> {% trans "Return" %}</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

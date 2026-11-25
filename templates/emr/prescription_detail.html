@@ -1,0 +1,79 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'emr:prescription_list' %}" class="hover:text-primary-600">{% trans "Prescriptions" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ prescription.pk }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Prescription" %} #{{ prescription.pk }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ prescription.patient.display_name }} · {{ prescription.patient.uhid }} · {{ prescription.doctor.name_en }}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    {% if prescription.status == "issued" %}{% status_badge prescription.get_status_display "success" %}{% elif prescription.status == "cancelled" %}{% status_badge prescription.get_status_display "danger" %}{% else %}{% status_badge prescription.get_status_display "neutral" %}{% endif %}
+    <a href="{% url 'emr:prescription_print' prescription.pk %}" target="_blank" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="printer" class="h-4 w-4"></i> {% trans "Print" %}</a>
+    <a href="{% url 'emr:prescription_pdf' prescription.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="file-down" class="h-4 w-4"></i> PDF</a>
+    {% if can_void %}
+    {% has_perm request.user "emr.change_prescription" as can_cancel %}
+    {% if can_cancel %}
+    <form method="post" action="{% url 'emr:prescription_cancel' prescription.pk %}">{% csrf_token %}
+      <button class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-red-200 px-3 text-sm text-red-600 hover:bg-red-50 dark:border-red-500/30"><i data-lucide="x-circle" class="h-4 w-4"></i> {% trans "Cancel" %}</button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">#</th>
+          <th class="px-4 py-3 font-medium">{% trans "Drug" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Dose" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Route" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Frequency" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Duration" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Qty" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Instructions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for item in prescription.items.all %}
+        <tr>
+          <td class="px-4 py-3 text-slate-400">{{ forloop.counter }}</td>
+          <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ item.drug }}{% if item.is_prn %} <span class="text-xs text-amber-600">PRN</span>{% endif %}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ item.dose }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ item.get_route_display }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ item.frequency }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ item.duration_days }} {% trans "day(s)" %}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ item.quantity }}</td>
+          <td class="px-4 py-3 text-slate-500 dark:text-slate-400">{{ item.instructions|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if prescription.notes %}
+  <div class="border-t border-slate-100 p-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
+    <p class="mb-1 text-xs uppercase tracking-wide text-slate-400">{% trans "Notes / advice" %}</p>
+    {{ prescription.notes }}
+  </div>
+  {% endif %}
+</section>
+
+<p class="mt-4 text-xs text-slate-400">
+  {% trans "Issued" %} {{ prescription.issued_at|date:"d M Y H:i" }}
+  · <a href="{% url 'emr:encounter_detail' prescription.encounter_id %}" class="text-primary-600 hover:underline">{% trans "View encounter" %} #{{ prescription.encounter_id }}</a>
+</p>
+{% endblock %}

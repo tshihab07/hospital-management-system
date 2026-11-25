@@ -1,0 +1,51 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Goods receipts" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Pharmacy" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Goods receipts" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Goods receipt notes" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Received stock pushed into inventory." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "GRN" %}</th>
+          <th class="px-4 py-3">{% trans "Vendor" %}</th>
+          <th class="px-4 py-3">{% trans "Store" %}</th>
+          <th class="px-4 py-3">{% trans "Received" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Total" %}</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for g in grns %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3 font-mono text-xs">{{ g.grn_number }}</td>
+          <td class="px-4 py-3">{{ g.vendor.name }}</td>
+          <td class="px-4 py-3">{{ g.store.name }}</td>
+          <td class="px-4 py-3">{{ g.received_date|ihms_date }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ g.total_amount|bdt }}</td>
+          <td class="px-4 py-3 text-right"><a href="{% url 'pharmacy:grn_detail' g.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "View" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-10 text-center text-slate-500">{% trans "No goods receipts yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

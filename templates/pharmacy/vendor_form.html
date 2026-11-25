@@ -1,0 +1,38 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "New vendor" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:vendor_list' %}" class="text-primary-600 hover:underline">{% trans "Vendors" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "New" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "New vendor" %}</h1>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" class="max-w-2xl">
+  {% csrf_token %}
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {% for field in form %}
+      <div>
+        <label class="mb-1 block text-xs font-medium text-slate-500">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors|striptags }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  <div class="mt-4 flex justify-end gap-2">
+    <a href="{% url 'pharmacy:vendor_list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-muted dark:border-slate-700 dark:text-slate-200">{% trans "Cancel" %}</a>
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="save" class="h-4 w-4"></i> {% trans "Save vendor" %}</button>
+  </div>
+</form>
+{% endblock %}

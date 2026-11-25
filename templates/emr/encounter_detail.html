@@ -1,0 +1,260 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'emr:encounter_list' %}" class="hover:text-primary-600">{% trans "Encounters" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ encounter.pk }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex items-center gap-4">
+    <span class="grid h-14 w-14 place-items-center rounded-2xl bg-clinical-50 text-clinical-600 dark:bg-clinical-500/10 dark:text-clinical-300">
+      <i data-lucide="stethoscope" class="h-6 w-6"></i>
+    </span>
+    <div>
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ encounter.patient.display_name }}</h1>
+      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+        {{ encounter.patient.uhid }} · {{ encounter.doctor.name_en }} · {{ encounter.encounter_date|date:"d M Y" }} · {{ encounter.get_encounter_type_display }}
+      </p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {% if is_open %}{% status_badge encounter.get_status_display "warning" %}{% else %}{% status_badge encounter.get_status_display "success" %}{% endif %}
+    {% if is_open %}
+    {% has_perm request.user "emr.change_encounter" as can_close %}
+    {% if can_close %}
+    <form method="post" action="{% url 'emr:encounter_close' encounter.pk %}">{% csrf_token %}
+      <button class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+        <i data-lucide="check-circle-2" class="h-4 w-4"></i> {% trans "Close encounter" %}
+      </button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4 flex flex-wrap items-center gap-2">
+  <a href="{% url 'emr:patient_timeline' encounter.patient.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="history" class="h-4 w-4"></i> {% trans "EMR timeline" %}</a>
+  {% has_perm request.user "emr.add_prescription" as can_rx %}
+  {% if can_rx %}<a href="{% url 'emr:prescription_create' encounter.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="pill" class="h-4 w-4"></i> {% trans "Prescribe" %}</a>{% endif %}
+  {% has_perm request.user "emr.add_laborder" as can_lab %}
+  {% if can_lab %}<a href="{% url 'emr:lab_order_create' encounter.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="flask-conical" class="h-4 w-4"></i> {% trans "Lab order" %}</a>{% endif %}
+  {% has_perm request.user "emr.add_radiologyorder" as can_rad %}
+  {% if can_rad %}<a href="{% url 'emr:radiology_order_create' encounter.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="scan" class="h-4 w-4"></i> {% trans "Radiology" %}</a>{% endif %}
+  {% has_perm request.user "emr.add_procedureorder" as can_proc %}
+  {% if can_proc %}<a href="{% url 'emr:procedure_order_create' encounter.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="scissors" class="h-4 w-4"></i> {% trans "Procedure" %}</a>{% endif %}
+  <a href="{% url 'emr:attachment_list' encounter.patient.pk %}" class="inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="paperclip" class="h-4 w-4"></i> {% trans "Attachments" %}</a>
+</div>
+
+{% if allergies %}
+<div class="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+  <i data-lucide="alert-triangle" class="mt-0.5 h-5 w-5 shrink-0"></i>
+  <div>
+    <p class="font-semibold">{% trans "Allergies on file" %}</p>
+    <p>{% for a in allergies %}{{ a.allergen }} ({{ a.get_severity_display }}){% if not forloop.last %}, {% endif %}{% endfor %}</p>
+  </div>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="space-y-6 lg:col-span-2">
+    <!-- SOAP -->
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "SOAP note" %}</h2>
+      <form method="post" action="{% url 'emr:soap_save' encounter.pk %}" novalidate>
+        {% csrf_token %}
+        <div class="mb-4">
+          <label for="id_template" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{% trans "Load template" %}</label>
+          <select name="template" id="id_template" onchange="emrLoadSoapTemplate(this)" class="h-11 w-full rounded-[10px] border border-slate-200 bg-transparent px-3 text-sm text-slate-700 focus:border-primary-400 focus:outline-none dark:border-slate-700 dark:text-slate-200">
+            <option value="">{% trans "— none —" %}</option>
+            {% for t in soap_form.template.field.queryset %}
+            <option value="{{ t.pk }}" data-s="{{ t.subjective|escapejs }}" data-o="{{ t.objective|escapejs }}" data-a="{{ t.assessment|escapejs }}" data-p="{{ t.plan|escapejs }}">{{ t.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>{{ soap_form.subjective.label_tag }}{{ soap_form.subjective }}</div>
+          <div>{{ soap_form.objective.label_tag }}{{ soap_form.objective }}</div>
+          <div>{{ soap_form.assessment.label_tag }}{{ soap_form.assessment }}</div>
+          <div>{{ soap_form.plan.label_tag }}{{ soap_form.plan }}</div>
+        </div>
+        {% has_perm request.user "emr.change_soapnote" as can_soap %}
+        {% if can_soap %}
+        <button type="submit" class="mt-4 inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+          <i data-lucide="save" class="h-4 w-4"></i> {% trans "Save SOAP note" %}
+        </button>
+        {% endif %}
+      </form>
+    </section>
+
+    <!-- Diagnoses -->
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Visit diagnoses" %}</h2>
+      {% if diagnoses %}
+      <ul class="mb-4 divide-y divide-slate-100 dark:divide-slate-800">
+        {% for dx in diagnoses %}
+        <li class="flex items-center justify-between gap-3 py-2 text-sm">
+          <span class="text-slate-700 dark:text-slate-200">
+            {% if dx.is_primary %}<span class="mr-1 rounded bg-primary-50 px-1.5 py-0.5 text-xs font-semibold text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">{% trans "Primary" %}</span>{% endif %}
+            {{ dx.description|default:dx.diagnosis.name }}
+          </span>
+          {% has_perm request.user "emr.delete_visitdiagnosis" as can_del_dx %}
+          {% if can_del_dx %}
+          <form method="post" action="{% url 'emr:diagnosis_delete' dx.pk %}">{% csrf_token %}
+            <button class="text-xs text-red-600 hover:underline">{% trans "Remove" %}</button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{% trans "No diagnoses recorded yet." %}</p>
+      {% endif %}
+      {% has_perm request.user "emr.add_visitdiagnosis" as can_dx %}
+      {% if can_dx %}
+      <form method="post" action="{% url 'emr:diagnosis_create' encounter.pk %}" class="grid grid-cols-1 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-4 dark:border-slate-800">
+        {% csrf_token %}
+        <div class="sm:col-span-1">{{ diagnosis_form.diagnosis.label_tag }}{{ diagnosis_form.diagnosis }}</div>
+        <div class="sm:col-span-2">{{ diagnosis_form.description.label_tag }}{{ diagnosis_form.description }}</div>
+        <div class="flex items-end gap-3">
+          <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">{{ diagnosis_form.is_primary }} {% trans "Primary" %}</label>
+          <button type="submit" class="inline-flex h-10 items-center rounded-[10px] bg-slate-800 px-3 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-700">{% trans "Add" %}</button>
+        </div>
+      </form>
+      {% endif %}
+    </section>
+
+    <!-- Vitals -->
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Vitals" %}</h2>
+      {% if vitals %}
+      <div class="mb-4 overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+            <tr>
+              <th class="py-2 pr-3 font-medium">{% trans "Time" %}</th>
+              <th class="py-2 pr-3 font-medium">{% trans "Temp" %}</th>
+              <th class="py-2 pr-3 font-medium">{% trans "Pulse" %}</th>
+              <th class="py-2 pr-3 font-medium">{% trans "BP" %}</th>
+              <th class="py-2 pr-3 font-medium">{% trans "SpO₂" %}</th>
+              <th class="py-2 pr-3 font-medium">BMI</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for v in vitals %}
+            <tr>
+              <td class="py-2 pr-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ v.recorded_at|date:"d M H:i" }}</td>
+              <td class="py-2 pr-3 text-slate-600 dark:text-slate-300">{{ v.temperature_c|default:"—" }}</td>
+              <td class="py-2 pr-3 text-slate-600 dark:text-slate-300">{{ v.pulse|default:"—" }}</td>
+              <td class="py-2 pr-3 text-slate-600 dark:text-slate-300">{{ v.bp_display }}</td>
+              <td class="py-2 pr-3 text-slate-600 dark:text-slate-300">{{ v.spo2|default:"—" }}</td>
+              <td class="py-2 pr-3 text-slate-600 dark:text-slate-300">{{ v.bmi|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% has_perm request.user "emr.add_vital" as can_vital %}
+      {% if can_vital %}
+      <form method="post" action="{% url 'emr:vital_create' encounter.pk %}" class="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 sm:grid-cols-5 dark:border-slate-800">
+        {% csrf_token %}
+        <div>{{ vital_form.temperature_c.label_tag }}{{ vital_form.temperature_c }}</div>
+        <div>{{ vital_form.pulse.label_tag }}{{ vital_form.pulse }}</div>
+        <div>{{ vital_form.bp_systolic.label_tag }}{{ vital_form.bp_systolic }}</div>
+        <div>{{ vital_form.bp_diastolic.label_tag }}{{ vital_form.bp_diastolic }}</div>
+        <div>{{ vital_form.spo2.label_tag }}{{ vital_form.spo2 }}</div>
+        <div>{{ vital_form.respiratory_rate.label_tag }}{{ vital_form.respiratory_rate }}</div>
+        <div>{{ vital_form.weight_kg.label_tag }}{{ vital_form.weight_kg }}</div>
+        <div>{{ vital_form.height_cm.label_tag }}{{ vital_form.height_cm }}</div>
+        <div>{{ vital_form.pain_score.label_tag }}{{ vital_form.pain_score }}</div>
+        <div class="flex items-end"><button type="submit" class="inline-flex h-11 items-center rounded-[10px] bg-slate-800 px-3 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-700">{% trans "Record" %}</button></div>
+      </form>
+      {% endif %}
+    </section>
+
+    <!-- Orders -->
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Orders (CPOE)" %}</h2>
+
+      <h3 class="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-300">{% trans "Prescriptions" %}</h3>
+      {% if orders.prescriptions %}
+      <ul class="mb-4 divide-y divide-slate-100 dark:divide-slate-800">
+        {% for rx in orders.prescriptions %}
+        <li class="py-2 text-sm">
+          <a href="{% url 'emr:prescription_detail' rx.pk %}" class="font-medium text-slate-700 hover:text-primary-600 dark:text-slate-200">{% trans "Rx" %} #{{ rx.pk }}</a>
+          <span class="text-slate-500 dark:text-slate-400">· {{ rx.get_status_display }} · {{ rx.items.count }} {% trans "drug(s)" %}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{% trans "No prescriptions." %}</p>{% endif %}
+
+      <h3 class="mb-2 text-sm font-semibold text-slate-600 dark:text-slate-300">{% trans "Lab orders" %}</h3>
+      {% for order in orders.lab_orders %}
+        {% include "emr/_order_row.html" with order=order kind="lab" %}
+      {% empty %}<p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{% trans "No lab orders." %}</p>{% endfor %}
+
+      <h3 class="mb-2 mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">{% trans "Radiology orders" %}</h3>
+      {% for order in orders.radiology_orders %}
+        {% include "emr/_order_row.html" with order=order kind="radiology" %}
+      {% empty %}<p class="mb-4 text-sm text-slate-500 dark:text-slate-400">{% trans "No radiology orders." %}</p>{% endfor %}
+
+      <h3 class="mb-2 mt-4 text-sm font-semibold text-slate-600 dark:text-slate-300">{% trans "Procedure orders" %}</h3>
+      {% for order in orders.procedure_orders %}
+        {% include "emr/_order_row.html" with order=order kind="procedure" %}
+      {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">{% trans "No procedure orders." %}</p>{% endfor %}
+    </section>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Problem list" %}</h2>
+        <a href="{% url 'emr:problem_list' encounter.patient.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "Manage" %}</a>
+      </div>
+      {% for p in problems %}
+      <p class="py-1 text-sm text-slate-600 dark:text-slate-300">{{ p.description }}</p>
+      {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">{% trans "None recorded." %}</p>{% endfor %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="mb-3 flex items-center justify-between">
+        <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Allergies" %}</h2>
+        <a href="{% url 'emr:allergy_list' encounter.patient.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "Manage" %}</a>
+      </div>
+      {% for a in allergies %}
+      <p class="py-1 text-sm text-slate-600 dark:text-slate-300">{{ a.allergen }} · {{ a.get_severity_display }}</p>
+      {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">{% trans "None recorded." %}</p>{% endfor %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Patient" %}</h2>
+      <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ encounter.patient.display_name }}</p>
+      <p class="font-mono text-xs text-slate-400">{{ encounter.patient.uhid }}</p>
+      <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">{{ encounter.patient.get_gender_display }}{% if encounter.patient.age %} · {{ encounter.patient.age }} {% trans "yrs" %}{% endif %}{% if encounter.patient.blood_group %} · {{ encounter.patient.get_blood_group_display }}{% endif %}</p>
+      <p class="text-sm text-slate-500 dark:text-slate-400">{{ encounter.patient.phone }}</p>
+      <a href="{% url 'patients:detail' encounter.patient.pk %}" class="mt-3 inline-flex text-xs text-primary-600 hover:underline">{% trans "Open patient profile" %} →</a>
+    </section>
+  </div>
+</div>
+
+<script>
+  function emrLoadSoapTemplate(select) {
+    var opt = select.options[select.selectedIndex];
+    if (!opt || !opt.value) return;
+    var map = {subjective: opt.dataset.s, objective: opt.dataset.o, assessment: opt.dataset.a, plan: opt.dataset.p};
+    Object.keys(map).forEach(function (key) {
+      var field = document.getElementById('id_' + key);
+      if (field && map[key]) field.value = map[key];
+    });
+  }
+</script>
+{% endblock %}

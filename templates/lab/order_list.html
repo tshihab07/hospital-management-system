@@ -1,0 +1,75 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Laboratory" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Laboratory" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Laboratory" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Order intake, sample tracking and result reporting." %}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'lab:sample_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="test-tube" class="h-4 w-4"></i> {% trans "Samples" %}</a>
+    <a href="{% url 'lab:result_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="clipboard-check" class="h-4 w-4"></i> {% trans "Results" %}</a>
+    <a href="{% url 'lab:radiology_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="scan" class="h-4 w-4"></i> {% trans "Radiology" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+  {% include "components/kpi_card.html" with label="Pending orders" value=dashboard.pending_orders icon="clipboard-list" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Pending samples" value=dashboard.pending_samples icon="test-tube" accent="#0EA5E9" %}
+  {% include "components/kpi_card.html" with label="Pending results" value=dashboard.pending_results icon="hourglass" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Abnormal today" value=dashboard.abnormal_today icon="alert-triangle" accent="#EF4444" %}
+  {% include "components/kpi_card.html" with label="Pending radiology" value=dashboard.pending_radiology icon="scan" accent="#8B5CF6" %}
+</div>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="grid grid-cols-1 gap-3 border-b border-slate-100 p-4 sm:grid-cols-3 dark:border-slate-800">
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Search" %}</label>{{ filters.q }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Status" %}</label>{{ filters.status }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Priority" %}</label>{{ filters.priority }}</div>
+    <div class="sm:col-span-3">
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Order #" %}</th>
+          <th class="px-4 py-3">{% trans "Patient" %}</th>
+          <th class="px-4 py-3">{% trans "Ordered by" %}</th>
+          <th class="px-4 py-3">{% trans "Tests" %}</th>
+          <th class="px-4 py-3">{% trans "Barcode" %}</th>
+          <th class="px-4 py-3">{% trans "Priority" %}</th>
+          <th class="px-4 py-3">{% trans "Status" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for order in orders %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3"><a href="{% url 'lab:order_detail' order.pk %}" class="font-medium text-primary-600 hover:underline">#{{ order.pk }}</a></td>
+          <td class="px-4 py-3">{{ order.patient.display_name }}<div class="text-xs text-slate-400">{{ order.patient.uhid }}</div></td>
+          <td class="px-4 py-3">{{ order.doctor.name_en }}</td>
+          <td class="px-4 py-3">{% for item in order.items.all %}<span class="mr-1 inline-block rounded bg-muted px-1.5 py-0.5 text-xs dark:bg-slate-800">{{ item.test.name }}</span>{% endfor %}</td>
+          <td class="px-4 py-3">{% if order.sample %}<span class="font-mono text-xs">{{ order.sample.barcode }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}</td>
+          <td class="px-4 py-3">{{ order.get_priority_display }}</td>
+          <td class="px-4 py-3">{% status_badge order.get_status_display "info" %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">{% trans "No lab orders found." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

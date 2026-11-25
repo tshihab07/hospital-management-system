@@ -1,0 +1,77 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Stock" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'pharmacy:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Pharmacy" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Stock" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Stock" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Batches across all stores." %}</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'pharmacy:stock_transfer' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-muted dark:border-slate-700 dark:text-slate-200"><i data-lucide="arrow-left-right" class="h-4 w-4"></i> {% trans "Transfer" %}</a>
+    <a href="{% url 'pharmacy:batch_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="package-plus" class="h-4 w-4"></i> {% trans "New batch" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="grid grid-cols-1 gap-3 border-b border-slate-100 p-4 sm:grid-cols-4 dark:border-slate-800">
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Search" %}</label><input type="text" name="q" value="{{ filters.q|default:'' }}" class="h-10 w-full rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800"></div>
+    <div>
+      <label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Store" %}</label>
+      <select name="store" class="h-10 w-full rounded-[10px] border border-slate-200 px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <option value="">{% trans "All stores" %}</option>
+        {% for s in stores %}<option value="{{ s.pk }}" {% if selected_store and selected_store.pk == s.pk %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="flex items-end gap-3">
+      <label class="flex items-center gap-2 text-xs text-slate-500"><input type="checkbox" name="with_stock" value="1" {% if filters.with_stock == '1' %}checked{% endif %}> {% trans "In stock only" %}</label>
+      <label class="flex items-center gap-2 text-xs text-slate-500"><input type="checkbox" name="expired" value="1" {% if filters.expired == '1' %}checked{% endif %}> {% trans "Show expired" %}</label>
+    </div>
+    <div class="flex items-end"><button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button></div>
+  </form>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Drug" %}</th>
+          <th class="px-4 py-3">{% trans "Store" %}</th>
+          <th class="px-4 py-3">{% trans "Batch" %}</th>
+          <th class="px-4 py-3">{% trans "Expiry" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Qty" %}</th>
+          <th class="px-4 py-3 text-right">{% trans "Value" %}</th>
+          <th class="px-4 py-3"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for b in batches %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3">{{ b.drug }}</td>
+          <td class="px-4 py-3">{{ b.store.name }}</td>
+          <td class="px-4 py-3 font-mono text-xs">{{ b.batch_no }}</td>
+          <td class="px-4 py-3">
+            {{ b.expiry_date|ihms_date|default:"—" }}
+            {% if b.is_expired %}<span class="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">{% trans "Expired" %}</span>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right tabular {% if b.quantity == 0 %}text-slate-400{% endif %}">{{ b.quantity }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ b.stock_value|bdt }}</td>
+          <td class="px-4 py-3 text-right"><a href="{% url 'pharmacy:batch_detail' b.pk %}" class="text-xs text-primary-600 hover:underline">{% trans "View" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">{% trans "No stock batches found." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
