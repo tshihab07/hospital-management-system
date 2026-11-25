@@ -1,0 +1,84 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Daily collection" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'billing:payment_list' %}" class="text-primary-600 hover:underline">{% trans "Payments" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Daily collection" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Daily collection" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ day|ihms_date }}</p>
+  </div>
+  <a href="?day={{ day|date:'Y-m-d' }}&method={{ method }}&export=csv" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> {% trans "Export CSV" %}</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-4">
+  <div class="lg:col-span-1">
+    <form method="get" class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="mb-3">
+        <label class="mb-1 block text-xs font-medium text-slate-500" for="id_day">{% trans "Date" %}</label>
+        <input type="date" name="day" id="id_day" value="{{ day|date:'Y-m-d' }}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+      </div>
+      <div class="mb-3">
+        <label class="mb-1 block text-xs font-medium text-slate-500" for="id_method">{% trans "Method" %}</label>
+        <select name="method" id="id_method" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+          <option value="">{% trans "All" %}</option>
+          {% for value, label in methods %}
+          <option value="{{ value }}" {% if method == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="w-full rounded-[10px] bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">{% trans "Apply" %}</button>
+    </form>
+  </div>
+
+  <div class="lg:col-span-3 space-y-6">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {% include "components/kpi_card.html" with label="Total collected" value=report.grand_total|bdt icon="banknote" %}
+      {% include "components/kpi_card.html" with label="Transactions" value=report.count icon="receipt" %}
+    </div>
+    <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {% if report.rows %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+            <tr>
+              <th class="px-4 py-3 font-medium">{% trans "Method" %}</th>
+              <th class="px-4 py-3 text-right font-medium">{% trans "Count" %}</th>
+              <th class="px-4 py-3 text-right font-medium">{% trans "Total" %}</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for row in report.rows %}
+            <tr>
+              <td class="px-4 py-3">{{ row.method|title }}</td>
+              <td class="px-4 py-3 text-right tabular">{{ row.count }}</td>
+              <td class="px-4 py-3 text-right tabular">{{ row.total|bdt }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+          <tfoot class="border-t border-slate-100 dark:border-slate-800">
+            <tr class="font-semibold">
+              <td class="px-4 py-3">{% trans "Grand total" %}</td>
+              <td class="px-4 py-3 text-right tabular">{{ report.count }}</td>
+              <td class="px-4 py-3 text-right tabular">{{ report.grand_total|bdt }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      {% else %}
+      <div class="p-8">{% include "components/empty_state.html" with icon="banknote" title="No collections" message="No payments were collected on this date." %}</div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Service packages" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Packages" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Service packages" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Bundled rates for surgeries and maternity care." %}</p>
+  </div>
+  {% has_perm request.user "billing.add_bill" as can_add %}
+  {% if can_add %}
+  <a href="{% url 'billing:package_bill_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="file-plus" class="h-4 w-4"></i> {% trans "New package bill" %}</a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if packages %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Code" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Name" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Components" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Price" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for package in packages %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono text-xs">{{ package.code }}</td>
+          <td class="px-4 py-3">{{ package.name }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ package.components.count }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ package.price|bdt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="package" title="No packages" message="Create bundled rate cards to bill surgeries and maternity care." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

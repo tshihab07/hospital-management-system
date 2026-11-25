@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Billing" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Billing" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Billing" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Invoices, payments, receipts, advances and refunds." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "billing.add_bill" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'billing:bill_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "New bill" %}</a>
+    {% endif %}
+    <a href="{% url 'billing:ledger' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="book-open" class="h-4 w-4"></i> {% trans "Ledger" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Open bills" value=kpis.open_bills icon="file-text" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Collected today" value=kpis.today_collected|bdt icon="banknote" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Outstanding" value=kpis.outstanding_total|bdt icon="alert-circle" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Pending discounts" value=kpis.pending_discounts icon="percent" accent="#8B5CF6" %}
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
+      <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Open bills" %}</h2>
+      <a href="{% url 'billing:bill_list' %}" class="text-sm text-primary-600 hover:underline">{% trans "View all" %}</a>
+    </div>
+    {% if open_bills %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for bill in open_bills %}
+          <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+            <td class="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-200">{{ bill.bill_no }}</td>
+            <td class="px-4 py-3"><a href="{% url 'billing:bill_detail' bill.pk %}" class="font-medium text-primary-600 hover:underline">{{ bill.patient.display_name }}</a></td>
+            <td class="px-4 py-3">{% status_badge bill.get_status_display bill.status %}</td>
+            <td class="px-4 py-3 text-right tabular font-medium">{{ bill.due_amount|bdt }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-8">{% include "components/empty_state.html" with icon="check-circle" title="No open bills" message="All invoices are settled." %}</div>
+    {% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-4 font-medium text-slate-700 dark:text-slate-200">{% trans "Unposted charges" %}</h2>
+    <dl class="space-y-3 text-sm">
+      <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Laboratory" %}</dt><dd class="font-medium tabular">{{ unbilled.lab }}</dd></div>
+      <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Pharmacy" %}</dt><dd class="font-medium tabular">{{ unbilled.pharmacy }}</dd></div>
+      <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Payments today" %}</dt><dd class="font-medium tabular">{{ kpis.payments_today }}</dd></div>
+      <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Pending refunds" %}</dt><dd class="font-medium tabular">{{ kpis.pending_refunds }}</dd></div>
+    </dl>
+  </section>
+</div>
+{% endblock %}

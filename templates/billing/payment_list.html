@@ -1,0 +1,72 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Payments" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Payments" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Payments" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Every payment received across billing channels." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-48">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_method">{% trans "Method" %}</label>
+      <select name="method" id="id_method" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <option value="">{% trans "All" %}</option>
+        <option value="cash" {% if method == "cash" %}selected{% endif %}>{% trans "Cash" %}</option>
+        <option value="card" {% if method == "card" %}selected{% endif %}>{% trans "Card" %}</option>
+        <option value="bkash" {% if method == "bkash" %}selected{% endif %}>bKash</option>
+        <option value="nagad" {% if method == "nagad" %}selected{% endif %}>Nagad</option>
+        <option value="rocket" {% if method == "rocket" %}selected{% endif %}>Rocket</option>
+        <option value="bank" {% if method == "bank" %}selected{% endif %}>{% trans "Bank transfer" %}</option>
+      </select>
+    </div>
+    <div class="w-64">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_search">{% trans "Search" %}</label>
+      <input type="text" name="search" id="id_search" value="{{ search }}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+  </form>
+
+  {% if payments %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Receipt" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Bill" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Method" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Amount" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Paid at" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for payment in payments %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3"><a href="{% url 'billing:receipt' payment.pk %}" class="font-mono text-xs text-primary-600 hover:underline">{{ payment.receipt.receipt_no|default:"—" }}</a></td>
+          <td class="px-4 py-3">{{ payment.bill.patient.display_name }}</td>
+          <td class="px-4 py-3 font-mono text-xs"><a href="{% url 'billing:bill_detail' payment.bill.pk %}" class="text-primary-600 hover:underline">{{ payment.bill.bill_no }}</a></td>
+          <td class="px-4 py-3">{{ payment.get_method_display }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ payment.amount|bdt }}</td>
+          <td class="px-4 py-3 text-slate-500">{{ payment.paid_at|ihms_datetime }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="banknote" title="No payments yet" message="Payments collected against bills will appear here." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

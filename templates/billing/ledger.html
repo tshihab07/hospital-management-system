@@ -1,0 +1,130 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Patient ledger" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Patient ledger" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Patient ledger" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Aggregated charges, payments, advances and refunds for a patient." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" action="{% url 'billing:ledger' %}" class="flex flex-wrap items-end gap-3">
+    <div class="w-80">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_patient">{% trans "Patient" %}</label>
+      <select name="patient" id="id_patient" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <option value="">{% trans "Select a patient" %}</option>
+        {% for row in patients %}
+        <option value="{{ row.pk }}" {% if patient and patient.pk == row.pk %}selected{% endif %}>{{ row.display_name }} · {{ row.uhid }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="search" class="h-4 w-4"></i> {% trans "Open ledger" %}</button>
+  </form>
+</section>
+
+{% if ledger %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+  {% include "components/kpi_card.html" with label="Charged" value=ledger.total_charged|bdt icon="file-text" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Paid" value=ledger.total_paid|bdt icon="banknote" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Outstanding" value=ledger.outstanding|bdt icon="alert-circle" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Advances" value=ledger.total_advanced|bdt icon="wallet" accent="#8B5CF6" %}
+  {% include "components/kpi_card.html" with label="Refunded" value=ledger.total_refunded|bdt icon="undo-2" accent="#EF4444" %}
+</div>
+
+<div class="space-y-6">
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="border-b border-slate-100 p-4 font-medium text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Bills" %}</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for bill in ledger.bills %}
+          <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+            <td class="px-4 py-3 font-mono text-xs"><a href="{% url 'billing:bill_detail' bill.pk %}" class="text-primary-600 hover:underline">{{ bill.bill_no }}</a></td>
+            <td class="px-4 py-3 text-slate-500">{{ bill.created_at|ihms_date }}</td>
+            <td class="px-4 py-3">{% status_badge bill.get_status_display bill.status %}</td>
+            <td class="px-4 py-3 text-right tabular">{{ bill.total|bdt }}</td>
+            <td class="px-4 py-3 text-right tabular text-slate-500">{{ bill.due_amount|bdt }}</td>
+          </tr>
+          {% empty %}
+          <tr><td class="px-4 py-6 text-center text-slate-500">{% trans "No bills." %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="border-b border-slate-100 p-4 font-medium text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Payments" %}</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for payment in ledger.payments %}
+          <tr>
+            <td class="px-4 py-3 font-mono text-xs">{{ payment.bill.bill_no }}</td>
+            <td class="px-4 py-3 text-slate-500">{{ payment.paid_at|ihms_datetime }}</td>
+            <td class="px-4 py-3">{{ payment.get_method_display }}</td>
+            <td class="px-4 py-3 text-right tabular">{{ payment.amount|bdt }}</td>
+          </tr>
+          {% empty %}
+          <tr><td class="px-4 py-6 text-center text-slate-500">{% trans "No payments." %}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="border-b border-slate-100 p-4 font-medium text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Advances" %}</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for advance in ledger.advances %}
+            <tr>
+              <td class="px-4 py-3 font-mono text-xs">{{ advance.advance_no }}</td>
+              <td class="px-4 py-3 text-right tabular">{{ advance.amount|bdt }}</td>
+              <td class="px-4 py-3 text-right tabular text-slate-500">{{ advance.balance|bdt }}</td>
+            </tr>
+            {% empty %}
+            <tr><td class="px-4 py-6 text-center text-slate-500">{% trans "No advances." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="border-b border-slate-100 p-4 font-medium text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Refunds" %}</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for refund in ledger.refunds %}
+            <tr>
+              <td class="px-4 py-3 font-mono text-xs">{{ refund.refund_no }}</td>
+              <td class="px-4 py-3">{% status_badge refund.get_status_display refund.status %}</td>
+              <td class="px-4 py-3 text-right tabular">{{ refund.amount|bdt }}</td>
+            </tr>
+            {% empty %}
+            <tr><td class="px-4 py-6 text-center text-slate-500">{% trans "No refunds." %}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+{% else %}
+<div class="rounded-2xl border border-slate-200 bg-surface p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% include "components/empty_state.html" with icon="book-open" title="Select a patient" message="Choose a patient above to view their full billing ledger." %}
+</div>
+{% endif %}
+{% endblock %}

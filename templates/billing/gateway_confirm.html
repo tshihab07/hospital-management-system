@@ -1,0 +1,42 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Gateway checkout" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'billing:bill_detail' bill.pk %}" class="text-primary-600 hover:underline">{{ bill.bill_no }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Gateway" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Gateway checkout" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Sandbox payment confirmation for the selected channel." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-xl rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <dl class="space-y-2 text-sm">
+    <div class="flex justify-between"><dt class="text-slate-500">{% trans "Bill" %}</dt><dd class="font-mono">{{ bill.bill_no }}</dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">{% trans "Patient" %}</dt><dd>{{ bill.patient.display_name }}</dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">{% trans "Channel" %}</dt><dd>{{ payment.get_method_display }}</dd></div>
+    <div class="flex justify-between"><dt class="text-slate-500">{% trans "Transaction" %}</dt><dd class="font-mono text-xs">{{ payment.txn_ref }}</dd></div>
+    <div class="flex justify-between border-t border-slate-100 pt-2 font-semibold dark:border-slate-800"><dt>{% trans "Amount" %}</dt><dd class="tabular">{{ payment.amount|bdt }}</dd></div>
+  </dl>
+  <div class="mt-6 flex gap-3">
+    <form method="post" class="flex-1">
+      {% csrf_token %}
+      <input type="hidden" name="result" value="success">
+      <button class="w-full rounded-[10px] bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600">{% trans "Confirm payment" %}</button>
+    </form>
+    <form method="post" class="flex-1">
+      {% csrf_token %}
+      <input type="hidden" name="result" value="cancel">
+      <button class="w-full rounded-[10px] border border-slate-200 px-4 py-2 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</button>
+    </form>
+  </div>
+</section>
+{% endblock %}

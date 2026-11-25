@@ -1,0 +1,76 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Credit notes" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Credit notes" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Credit notes" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Post-payment corrections raised against locked bills." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-44">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_status">{% trans "Status" %}</label>
+      <select name="status" id="id_status" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <option value="">{% trans "All" %}</option>
+        {% for value, label in statuses %}
+        <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="w-64">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_search">{% trans "Search" %}</label>
+      <input type="text" name="search" id="id_search" value="{{ search }}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+  </form>
+
+  {% if credit_notes %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Note no" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Bill" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Amount" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for note in credit_notes %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono text-xs">{{ note.note_no }}</td>
+          <td class="px-4 py-3"><a href="{% url 'billing:bill_detail' note.bill.pk %}" class="text-primary-600 hover:underline">{{ note.bill.bill_no }}</a></td>
+          <td class="px-4 py-3">{{ note.bill.patient.display_name }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ note.amount|bdt }}</td>
+          <td class="px-4 py-3">{% status_badge note.get_status_display note.status %}</td>
+          <td class="px-4 py-3">
+            {% has_perm request.user "billing.change_creditnote" as can_change %}
+            {% if can_change and note.status == "draft" %}
+            <form method="post" action="{% url 'billing:credit_note_action' note.pk 'issue' %}">{% csrf_token %}<button class="text-xs text-primary-600 hover:underline">{% trans "Issue" %}</button></form>
+            {% elif can_change and note.status == "issued" %}
+            <form method="post" action="{% url 'billing:credit_note_action' note.pk 'void' %}">{% csrf_token %}<button class="text-xs text-red-600 hover:underline">{% trans "Void" %}</button></form>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}<div class="p-4">{% include "components/pagination.html" %}</div>{% endif %}
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="file-minus" title="No credit notes" message="Corrections to paid bills will appear here." %}</div>
+  {% endif %}
+</section>
+{% endblock %}
