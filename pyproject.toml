@@ -1,0 +1,19 @@
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+exclude = [".venv", "migrations", "staticfiles"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E203", "B008"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests", "migrations", "staticfiles"]
