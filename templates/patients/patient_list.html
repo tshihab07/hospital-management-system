@@ -1,0 +1,109 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Patients" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Patients" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Patients" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+      {% blocktrans count total=total %}{{ total }} patient registered.{% plural %}{{ total }} patients registered.{% endblocktrans %}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "patients.view_patient" as can_view %}
+    {% if can_view %}
+    <a href="{% url 'patients:export' %}?{{ request.GET.urlencode }}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="download" class="h-4 w-4"></i> {% trans "Export" %}
+    </a>
+    {% endif %}
+    {% has_perm request.user "patients.add_patient" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'patients:create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="user-plus" class="h-4 w-4"></i> {% trans "Register patient" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="min-w-[220px] flex-1">
+      {% include "components/form_field.html" with field=filter_form.q wrapper_class="mb-0" %}
+    </div>
+    <div class="w-40">
+      {% include "components/form_field.html" with field=filter_form.gender wrapper_class="mb-0" %}
+    </div>
+    <div class="w-40">
+      {% include "components/form_field.html" with field=filter_form.patient_type wrapper_class="mb-0" %}
+    </div>
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="search" class="h-4 w-4"></i> {% trans "Search" %}
+    </button>
+    <a href="{% url 'patients:list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Reset" %}</a>
+  </form>
+
+  {% if patients %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "UHID" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Name" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Gender / Age" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Blood" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Phone" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Type" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for patient in patients %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ patient.uhid }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'patients:detail' patient.pk %}" class="font-medium text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ patient.display_name }}</a>
+            {% if patient.full_name_bn %}<p class="text-xs text-slate-400">{{ patient.full_name_bn }}</p>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ patient.get_gender_display }}{% if patient.age %} · {{ patient.age }}y{% endif %}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ patient.get_blood_group_display }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ patient.phone }}</td>
+          <td class="px-4 py-3">
+            {% status_badge patient.get_patient_type_display "info" %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% has_perm request.user "patients.change_patient" as can_change %}
+            {% if can_change %}
+            <a href="{% url 'patients:update' patient.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'Edit' %}"><i data-lucide="pencil" class="h-4 w-4"></i></a>
+            {% endif %}
+            {% has_perm request.user "patients.delete_patient" as can_delete %}
+            {% if can_delete %}
+            <form method="post" action="{% url 'patients:delete' patient.pk %}" class="inline" onsubmit="return confirm('{% trans "Archive this patient?" %}')">
+              {% csrf_token %}
+              <button type="submit" class="ml-1 align-middle text-slate-400 hover:text-red-600" title="{% trans 'Archive' %}"><i data-lucide="archive" class="h-4 w-4"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4">
+    {% include "components/pagination.html" %}
+  </div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="users" title="No patients found" message="Adjust your filters or register a new patient." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

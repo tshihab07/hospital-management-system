@@ -1,0 +1,123 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'patients:list' %}" class="hover:text-primary-600">{% trans "Patients" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ page_title }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ page_title }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Capture the patient's demographics and contact details." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data" novalidate class="max-w-5xl">
+  {% csrf_token %}
+
+  {% if duplicates %}
+  <div class="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5 dark:border-amber-500/40 dark:bg-amber-500/10">
+    <div class="flex items-start gap-3">
+      <i data-lucide="alert-triangle" class="mt-0.5 h-5 w-5 text-amber-600"></i>
+      <div class="flex-1">
+        <p class="font-medium text-amber-800 dark:text-amber-200">{% trans "Possible duplicate patient(s)" %}</p>
+        <p class="mt-0.5 text-sm text-amber-700 dark:text-amber-300">{% trans "A patient with the same phone + date of birth, or the same name, already exists:" %}</p>
+        <ul class="mt-2 space-y-1 text-sm">
+          {% for match in duplicates %}
+          <li>
+            <a href="{% url 'patients:detail' match.pk %}" class="font-medium text-amber-800 underline dark:text-amber-200">{{ match.uhid }} · {{ match.display_name }}</a>
+            <span class="text-amber-600 dark:text-amber-400">— {{ match.phone }}{% if match.date_of_birth %} · {{ match.date_of_birth }}{% endif %}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="mt-4 flex items-center gap-3">
+      <input type="hidden" name="confirm_duplicate" value="1">
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-amber-600 px-4 text-sm font-medium text-white hover:bg-amber-700">
+        <i data-lucide="user-plus" class="h-4 w-4"></i> {% trans "Register anyway" %}
+      </button>
+      <a href="{% url 'patients:list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-amber-300 px-4 text-sm text-amber-700 hover:bg-amber-100 dark:border-amber-500/40 dark:text-amber-200">{% trans "Cancel" %}</a>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if form.non_field_errors %}
+  <div class="mb-6 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Identity" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.full_name_en %}
+        {% include "components/form_field.html" with field=form.full_name_bn %}
+        {% include "components/form_field.html" with field=form.date_of_birth %}
+        {% include "components/form_field.html" with field=form.age_years %}
+        {% include "components/form_field.html" with field=form.gender %}
+        {% include "components/form_field.html" with field=form.blood_group %}
+        {% include "components/form_field.html" with field=form.marital_status %}
+        {% include "components/form_field.html" with field=form.nid %}
+        {% include "components/form_field.html" with field=form.nationality %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Contact" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.phone %}
+        {% include "components/form_field.html" with field=form.alt_phone %}
+        {% include "components/form_field.html" with field=form.email %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Address" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        <div class="sm:col-span-2">{% include "components/form_field.html" with field=form.address %}</div>
+        <div class="sm:col-span-1">{% include "components/form_field.html" with field=form.city %}</div>
+        <div class="sm:col-span-2">{% include "components/form_field.html" with field=form.permanent_address %}</div>
+        <div>{% include "components/form_field.html" with field=form.postcode %}</div>
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Guardian & emergency contact" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.guardian_name %}
+        {% include "components/form_field.html" with field=form.guardian_relation %}
+        <div class="hidden sm:block"></div>
+        {% include "components/form_field.html" with field=form.emergency_contact_name %}
+        {% include "components/form_field.html" with field=form.emergency_contact_relation %}
+        {% include "components/form_field.html" with field=form.emergency_contact_phone %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Administrative" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.patient_type %}
+        {% include "components/form_field.html" with field=form.occupation %}
+        {% include "components/form_field.html" with field=form.photo %}
+        <div class="sm:col-span-2">{% include "components/form_field.html" with field=form.notes %}</div>
+        {% include "components/form_field.html" with field=form.is_active %}
+      </div>
+    </section>
+  </div>
+
+  {% if not duplicates %}
+  <div class="mt-5 flex items-center gap-3">
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="save" class="h-4 w-4"></i> {% if is_create %}{% trans "Register patient" %}{% else %}{% trans "Save changes" %}{% endif %}
+    </button>
+    <a href="{% url 'patients:list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+  </div>
+  {% endif %}
+</form>
+{% endblock %}

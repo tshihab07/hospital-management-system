@@ -1,0 +1,167 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ patient.display_name }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'patients:list' %}" class="hover:text-primary-600">{% trans "Patients" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ patient.uhid }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex items-center gap-4">
+    {% if patient.photo %}
+    <img src="{{ patient.photo.url }}" alt="{{ patient.display_name }}" class="h-16 w-16 rounded-2xl object-cover ring-2 ring-white dark:ring-slate-800">
+    {% else %}
+    <span class="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
+      <i data-lucide="user" class="h-7 w-7"></i>
+    </span>
+    {% endif %}
+    <div>
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ patient.display_name }}</h1>
+      <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <span class="font-mono">{{ patient.uhid }}</span>
+        <span>·</span>
+        <span>{{ patient.get_gender_display }}{% if patient.age %} · {{ patient.age }}y{% endif %}</span>
+        <span>·</span>
+        <span>{{ patient.get_blood_group_display }}</span>
+        {% if patient.is_deleted %}{% status_badge "Archived" "danger" %}{% endif %}
+        {% status_badge patient.get_patient_type_display "info" %}
+      </div>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "patients.change_patient" as can_change %}
+    {% if can_change and not patient.is_deleted %}
+    <a href="{% url 'patients:update' patient.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="pencil" class="h-4 w-4"></i> {% trans "Edit" %}
+    </a>
+    {% endif %}
+    {% if patient.is_deleted %}
+    <form method="post" action="{% url 'patients:restore' patient.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700">
+        <i data-lucide="rotate-ccw" class="h-4 w-4"></i> {% trans "Restore" %}
+      </button>
+    </form>
+    {% else %}
+    {% has_perm request.user "patients.delete_patient" as can_delete %}
+    {% if can_delete %}
+    <form method="post" action="{% url 'patients:delete' patient.pk %}" onsubmit="return confirm('{% trans "Archive this patient?" %}')">
+      {% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-red-200 px-4 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10">
+        <i data-lucide="archive" class="h-4 w-4"></i> {% trans "Archive" %}
+      </button>
+    </form>
+    {% endif %}
+    {% endif %}
+    <button type="button" onclick="window.print()" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="printer" class="h-4 w-4"></i> {% trans "Print" %}
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="space-y-6 lg:col-span-2">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Demographics" %}</h2>
+      <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Name (Bengali)" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.full_name_bn|default:"—" }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Date of birth" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.date_of_birth|ihms_date|default:"—" }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "NID" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.nid|default:"—" }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Marital status" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.get_marital_status_display }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Phone" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.phone }}{% if patient.alt_phone %} / {{ patient.alt_phone }}{% endif %}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Email" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.email|default:"—" }}</dd></div>
+        <div class="sm:col-span-2"><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Address" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.address|default:"—" }}{% if patient.city %}, {{ patient.city }}{% endif %} {{ patient.postcode }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Guardian" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.guardian_name|default:"—" }}{% if patient.guardian_relation %} ({{ patient.get_guardian_relation_display }}){% endif %}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Emergency contact" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.emergency_contact_name|default:"—" }}{% if patient.emergency_contact_phone %} · {{ patient.emergency_contact_phone }}{% endif %}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Occupation" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.occupation|default:"—" }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Registered" %}</dt><dd class="text-sm text-slate-700 dark:text-slate-200">{{ patient.created_at|ihms_datetime }}{% if patient.registered_by %} · {{ patient.registered_by }}{% endif %}</dd></div>
+      </dl>
+      {% if patient.notes %}
+      <p class="mt-4 rounded-[10px] bg-muted p-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300">{{ patient.notes }}</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Timeline" %}</h2>
+      <div class="rounded-[10px] border border-dashed border-slate-200 p-6 text-center dark:border-slate-700">
+        {% include "components/empty_state.html" with icon="activity" title="Clinical timeline" message="Visits, admissions, lab results and prescriptions will appear here in later phases." %}
+      </div>
+      {% if timeline %}
+      <ul class="mt-4 space-y-3">
+        {% for entry in timeline %}
+        <li class="flex items-start gap-3 text-sm">
+          <span class="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-slate-400 dark:bg-slate-800">
+            <i data-lucide="history" class="h-3.5 w-3.5"></i>
+          </span>
+          <div>
+            <p class="text-slate-700 dark:text-slate-200">{{ entry.get_action_display }} — {{ entry.user|default:"system" }}</p>
+            <p class="text-xs text-slate-400">{{ entry.created_at|ihms_datetime }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Documents" %}</h2>
+      {% has_perm request.user "patients.change_patient" as can_change %}
+      {% if can_change and not patient.is_deleted %}
+      <form method="post" action="{% url 'patients:document_create' patient.pk %}" enctype="multipart/form-data" class="mb-4 space-y-3 border-b border-slate-100 pb-4 dark:border-slate-800">
+        {% csrf_token %}
+        <input type="text" name="title" required placeholder="{% trans 'Title' %}" class="h-10 w-full rounded-[10px] border border-slate-200 bg-page px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <select name="category" class="h-10 w-full rounded-[10px] border border-slate-200 bg-page px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+          <option value="report">{% trans "Report" %}</option>
+          <option value="prescription">{% trans "Prescription" %}</option>
+          <option value="id">{% trans "Identity document" %}</option>
+          <option value="consent">{% trans "Consent form" %}</option>
+          <option value="other">{% trans "Other" %}</option>
+        </select>
+        <input type="file" name="file" required class="w-full text-sm text-slate-500 file:mr-3 file:rounded-[10px] file:border-0 file:bg-primary-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary-600">
+        <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+          <i data-lucide="upload" class="h-4 w-4"></i> {% trans "Upload" %}
+        </button>
+      </form>
+      {% endif %}
+      {% if documents %}
+      <ul class="space-y-2">
+        {% for doc in documents %}
+        <li class="flex items-center justify-between rounded-[10px] border border-slate-100 px-3 py-2 dark:border-slate-800">
+          <a href="{{ doc.file.url }}" target="_blank" class="min-w-0 flex-1">
+            <span class="block truncate text-sm text-slate-700 dark:text-slate-200">{{ doc.title }}</span>
+            <span class="text-xs text-slate-400">{{ doc.get_category_display }} · {{ doc.created_at|ihms_date }}</span>
+          </a>
+          {% if can_change %}
+          <form method="post" action="{% url 'patients:document_delete' doc.pk %}" onsubmit="return confirm('{% trans "Remove this document?" %}')">
+            {% csrf_token %}
+            <button type="submit" class="ml-2 text-slate-400 hover:text-red-600" title="{% trans 'Remove' %}"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </form>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-400">{% trans "No documents uploaded." %}</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-3 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Portal account" %}</h2>
+      {% if patient.portal_user %}
+      <p class="text-sm text-slate-600 dark:text-slate-300">{{ patient.portal_user.username }}</p>
+      {% else %}
+      <p class="text-sm text-slate-400">{% trans "No portal account yet. Patient portal arrives in Phase 15." %}</p>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

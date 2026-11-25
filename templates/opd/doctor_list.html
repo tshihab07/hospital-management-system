@@ -1,0 +1,88 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Doctors" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Doctors" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Doctors" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Doctor master, consultation fees and weekly availability." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "opd.add_doctor" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'opd:doctor_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="plus" class="h-4 w-4"></i> {% trans "Add doctor" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="min-w-[240px] flex-1">
+      <div class="mb-0">
+        <label for="q" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{% trans "Search" %}</label>
+        <input type="text" name="q" id="q" value="{{ search }}" placeholder="{% trans 'Name, BMDC or specialization' %}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-transparent px-3 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-slate-700 dark:text-slate-200">
+      </div>
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="search" class="h-4 w-4"></i> {% trans "Search" %}
+    </button>
+    <a href="{% url 'opd:doctor_list' %}" class="inline-flex h-11 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Reset" %}</a>
+  </form>
+
+  {% if doctors %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Name" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Specialization" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "BMDC" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Fee" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for doctor in doctors %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3">
+            <p class="font-medium text-slate-700 dark:text-slate-200">{{ doctor.name_en }}</p>
+            <p class="text-xs text-slate-400">{{ doctor.qualification|default:"" }}</p>
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ doctor.specialization|default:"—" }}</td>
+          <td class="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ doctor.bmdc_no|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">৳{{ doctor.consultation_fee }}</td>
+          <td class="px-4 py-3">
+            {% if doctor.is_active %}{% trans "Active" as active_label %}{% status_badge active_label "success" %}{% else %}{% trans "Inactive" as inactive_label %}{% status_badge inactive_label "neutral" %}{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% has_perm request.user "opd.change_doctor" as can_change %}
+            {% if can_change %}
+            <a href="{% url 'opd:doctor_update' doctor.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'Edit' %}"><i data-lucide="pencil" class="h-4 w-4"></i></a>
+            <a href="{% url 'opd:doctor_availability' doctor.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'Availability' %}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="stethoscope" title="No doctors found" message="Add a doctor to start booking appointments." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

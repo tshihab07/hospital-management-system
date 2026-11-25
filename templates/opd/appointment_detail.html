@@ -1,0 +1,105 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'opd:appointment_list' %}" class="hover:text-primary-600">{% trans "Appointments" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">#{{ appointment.token_no }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex items-center gap-4">
+    <span class="grid h-16 w-16 place-items-center rounded-2xl bg-primary-50 font-display text-2xl font-bold text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">#{{ appointment.token_no }}</span>
+    <div>
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ appointment.patient.display_name }}</h1>
+      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ appointment.appt_date|date:"D, d M Y" }}{% if appointment.slot %} · {{ appointment.slot.label }}{% endif %} · {{ appointment.doctor.name_en }}</p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {% if appointment.status == "completed" %}{% status_badge appointment.get_status_display "success" %}
+    {% elif appointment.status == "cancelled" %}{% status_badge appointment.get_status_display "danger" %}
+    {% elif appointment.status == "no_show" %}{% status_badge appointment.get_status_display "warning" %}
+    {% elif appointment.status == "in_consultation" %}{% status_badge appointment.get_status_display "critical" %}
+    {% else %}{% status_badge appointment.get_status_display "info" %}{% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <div class="space-y-6 lg:col-span-2">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Details" %}</h2>
+      <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Patient" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200"><a href="{% url 'patients:detail' appointment.patient.pk %}" class="hover:text-primary-600">{{ appointment.patient.display_name }} · {{ appointment.patient.uhid }}</a></dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Doctor" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ appointment.doctor.display_name }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Visit type" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ appointment.get_visit_type_display }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Consultation fee" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">৳{{ appointment.consultation_fee }}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Booked by" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{% if appointment.created_by %}{{ appointment.created_by.get_full_name|default:appointment.created_by.username }}{% else %}—{% endif %}</dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Notes" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200">{{ appointment.notes|default:"—" }}</dd></div>
+        {% if appointment.rescheduled_from %}
+        <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Rescheduled from" %}</dt><dd class="mt-0.5 text-sm text-slate-700 dark:text-slate-200"><a href="{% url 'opd:appointment_detail' appointment.rescheduled_from.pk %}" class="hover:text-primary-600">#{{ appointment.rescheduled_from.token_no }} ({{ appointment.rescheduled_from.appt_date|date:"d M Y" }})</a></dd></div>
+        {% endif %}
+        {% if appointment.status == "cancelled" %}
+        <div class="sm:col-span-2"><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Cancellation" %}</dt><dd class="mt-0.5 text-sm text-red-600 dark:text-red-300">{{ appointment.cancel_reason|default:"—" }} — {{ appointment.cancelled_at|date:"d M Y H:i" }}</dd></div>
+        {% endif %}
+      </dl>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "OPD consultation" %}</h2>
+      <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "Document the consultation in the EMR: SOAP notes, vitals, diagnoses, prescriptions and orders. The consultation fee is captured here for billing." %}</p>
+      <div class="mt-4 flex flex-wrap items-center gap-2">
+        {% has_perm request.user "emr.view_encounter" as can_emr %}
+        {% if can_emr %}
+        <a href="{% url 'emr:encounter_open' %}?appointment={{ appointment.pk }}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+          <i data-lucide="stethoscope" class="h-4 w-4"></i> {% trans "Open encounter" %}
+        </a>
+        <a href="{% url 'emr:patient_timeline' appointment.patient.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+          <i data-lucide="history" class="h-4 w-4"></i> {% trans "EMR timeline" %}
+        </a>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Queue actions" %}</h2>
+    {% has_perm request.user "opd.change_appointment" as can_change %}
+    {% if can_change %}
+    <div class="space-y-2">
+      {% if appointment.status == "scheduled" %}
+        <form method="post" action="{% url 'opd:appointment_status' appointment.pk %}">{% csrf_token %}<input type="hidden" name="status" value="arrived"><input type="hidden" name="next" value="{{ request.path }}">
+          <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"><i data-lucide="user-check" class="h-4 w-4"></i> {% trans "Mark arrived" %}</button></form>
+      {% endif %}
+      {% if appointment.status == "arrived" %}
+        <form method="post" action="{% url 'opd:appointment_status' appointment.pk %}">{% csrf_token %}<input type="hidden" name="status" value="in_consultation"><input type="hidden" name="next" value="{{ request.path }}">
+          <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="stethoscope" class="h-4 w-4"></i> {% trans "Start consultation" %}</button></form>
+      {% endif %}
+      {% if appointment.status == "in_consultation" %}
+        <form method="post" action="{% url 'opd:appointment_status' appointment.pk %}">{% csrf_token %}<input type="hidden" name="status" value="completed"><input type="hidden" name="next" value="{{ request.path }}">
+          <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"><i data-lucide="check" class="h-4 w-4"></i> {% trans "Complete" %}</button></form>
+      {% endif %}
+      {% if appointment.status == "scheduled" or appointment.status == "arrived" %}
+        <form method="post" action="{% url 'opd:appointment_status' appointment.pk %}">{% csrf_token %}<input type="hidden" name="status" value="no_show"><input type="hidden" name="next" value="{{ request.path }}">
+          <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="user-x" class="h-4 w-4"></i> {% trans "No show" %}</button></form>
+      {% endif %}
+      {% if appointment.is_active %}
+        <a href="{% url 'opd:appointment_reschedule' appointment.pk %}" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="calendar-sync" class="h-4 w-4"></i> {% trans "Reschedule" %}</a>
+        <form method="post" action="{% url 'opd:appointment_cancel' appointment.pk %}" onsubmit="return confirm('{% trans "Cancel this appointment?" %}')" class="space-y-2 border-t border-slate-100 pt-3 dark:border-slate-800">
+          {% csrf_token %}
+          <input type="text" name="reason" placeholder="{% trans 'Cancellation reason' %}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-transparent px-3 text-sm text-slate-700 focus:border-primary-400 focus:outline-none dark:border-slate-700 dark:text-slate-200">
+          <button class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-red-500 px-4 text-sm font-medium text-white hover:bg-red-600"><i data-lucide="x-circle" class="h-4 w-4"></i> {% trans "Cancel appointment" %}</button>
+        </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "You do not have permission to change this appointment." %}</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

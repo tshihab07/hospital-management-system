@@ -1,0 +1,91 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Appointments" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Appointments" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Appointments" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ appt_date|date:"D, d M Y" }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "opd.add_appointment" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'opd:appointment_book' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="calendar-plus" class="h-4 w-4"></i> {% trans "Book appointment" %}
+    </a>
+    {% endif %}
+    <a href="{% url 'opd:queue' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="list-ordered" class="h-4 w-4"></i> {% trans "Queue" %}
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-40">{% include "components/form_field.html" with field=filter_form.appt_date wrapper_class="mb-0" %}</div>
+    <div class="w-48">{% include "components/form_field.html" with field=filter_form.doctor wrapper_class="mb-0" %}</div>
+    <div class="w-40">{% include "components/form_field.html" with field=filter_form.status wrapper_class="mb-0" %}</div>
+    <div class="min-w-[200px] flex-1">{% include "components/form_field.html" with field=filter_form.q wrapper_class="mb-0" %}</div>
+    <button type="submit" class="inline-flex h-[42px] items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="search" class="h-4 w-4"></i> {% trans "Filter" %}
+    </button>
+    <a href="{% url 'opd:appointment_list' %}" class="inline-flex h-[42px] items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Reset" %}</a>
+  </form>
+
+  {% if appointments %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Token" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Time" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patient" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Doctor" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Type" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for appt in appointments %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-mono font-medium text-slate-700 dark:text-slate-200">#{{ appt.token_no }}</td>
+          <td class="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{% if appt.slot %}{{ appt.slot.start_time|time:"H:i" }}–{{ appt.slot.end_time|time:"H:i" }}{% elif appt.slot_time %}{{ appt.slot_time|time:"H:i" }}{% else %}—{% endif %}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'patients:detail' appt.patient.pk %}" class="font-medium text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ appt.patient.display_name }}</a>
+            <p class="font-mono text-xs text-slate-400">{{ appt.patient.uhid }}</p>
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ appt.doctor.name_en }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ appt.get_visit_type_display }}</td>
+          <td class="px-4 py-3">
+            {% if appt.status == "completed" %}{% status_badge appt.get_status_display "success" %}
+            {% elif appt.status == "cancelled" %}{% status_badge appt.get_status_display "danger" %}
+            {% elif appt.status == "no_show" %}{% status_badge appt.get_status_display "warning" %}
+            {% elif appt.status == "in_consultation" %}{% status_badge appt.get_status_display "critical" %}
+            {% else %}{% status_badge appt.get_status_display "info" %}{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            <a href="{% url 'opd:appointment_detail' appt.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'View' %}"><i data-lucide="eye" class="h-4 w-4"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="calendar" title="No appointments" message="Book an appointment for this day." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

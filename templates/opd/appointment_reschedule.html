@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'opd:appointment_list' %}" class="hover:text-primary-600">{% trans "Appointments" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'opd:appointment_detail' appointment.pk %}" class="hover:text-primary-600">#{{ appointment.token_no }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Reschedule" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Reschedule Appointment" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ appointment.patient.display_name }} · {{ appointment.doctor.name_en }} · {% trans "current token" %} #{{ appointment.token_no }}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Find a new date" %}</h2>
+    <form method="get" novalidate>
+      <div class="mb-4">
+        <label for="preview_date" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{% trans "Date" %}</label>
+        <input type="date" name="appt_date" id="preview_date" value="{{ request.GET.appt_date }}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-transparent px-3 text-sm text-slate-700 focus:border-primary-400 focus:outline-none dark:border-slate-700 dark:text-slate-200">
+      </div>
+      <button type="submit" class="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+        <i data-lucide="search" class="h-4 w-4"></i> {% trans "Show free blocks" %}
+      </button>
+    </form>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Confirm new block" %}</h2>
+    {% if form.non_field_errors %}
+    <div class="mb-4 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "components/form_field.html" with field=form.appt_date %}
+      <div class="mt-2">
+        <p class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">{% trans "New time block" %}</p>
+        {% if blocks %}
+        <div class="space-y-2">
+          {% for radio in form.slot %}
+          <label class="flex items-center gap-3 rounded-[10px] border border-slate-200 px-4 py-3 text-sm text-slate-700 hover:border-primary-400 dark:border-slate-700 dark:text-slate-200">
+            {{ radio.tag }}<span>{{ radio.choice_label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="rounded-[10px] border border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+          {% trans "Pick a date and press “Show free blocks” to list availability." %}
+        </p>
+        {% endif %}
+        {% for error in form.slot.errors %}<p class="mt-1 text-xs text-red-600">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="mt-5 flex items-center gap-3">
+        <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+          <i data-lucide="calendar-sync" class="h-4 w-4"></i> {% trans "Reschedule" %}
+        </button>
+        <a href="{% url 'opd:appointment_detail' appointment.pk %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
