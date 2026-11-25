@@ -126,6 +126,7 @@ PAYMENTS = [
     ("Debit / Credit Card", "CARD", PaymentKind.CARD, 1.5),
     ("bKash", "BKASH", PaymentKind.MOBILE, 1.85),
     ("Nagad", "NAGAD", PaymentKind.MOBILE, 1.5),
+    ("Rocket", "ROCKET", PaymentKind.MOBILE, 1.5),
     ("Bank Transfer", "BANK", PaymentKind.BANK, 0),
 ]
 
