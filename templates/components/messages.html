@@ -1,0 +1,22 @@
+{% load i18n %}
+{% if messages %}
+<div class="fixed right-4 top-20 z-50 flex w-[22rem] max-w-[calc(100vw-2rem)] flex-col gap-2" role="status" aria-live="polite">
+  {% for message in messages %}
+  {% with level=message.level_tag %}
+  <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)"
+       x-transition:enter="animate-fade-up"
+       class="flex items-start gap-3 rounded-2xl border p-4 shadow-lg
+        {% if level == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200
+        {% elif level == 'error' or level == 'danger' %}border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200
+        {% elif level == 'warning' %}border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200
+        {% else %}border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200{% endif %}">
+    <i data-lucide="{% if level == 'success' %}check-circle-2{% elif level == 'warning' %}alert-triangle{% elif level == 'error' or level == 'danger' %}x-circle{% else %}info{% endif %}" class="mt-0.5 h-5 w-5 shrink-0"></i>
+    <p class="flex-1 text-sm">{{ message }}</p>
+    <button type="button" @click="show = false" class="text-current/60 hover:text-current" aria-label="{% trans 'Dismiss' %}">
+      <i data-lucide="x" class="h-4 w-4"></i>
+    </button>
+  </div>
+  {% endwith %}
+  {% endfor %}
+</div>
+{% endif %}

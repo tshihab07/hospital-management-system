@@ -1,0 +1,24 @@
+{% load i18n %}
+<article class="group relative overflow-hidden rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+  <span class="absolute inset-y-0 left-0 w-1" style="background: {{ accent|default:'#4F46E5' }}"></span>
+  <div class="flex items-start justify-between gap-3">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{% trans label %}</p>
+    {% if icon %}
+    <span class="grid h-9 w-9 place-items-center rounded-xl bg-muted text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+      <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+    </span>
+    {% endif %}
+  </div>
+  <p class="mt-2 font-display text-3xl font-bold tabular text-slate-800 dark:text-slate-100">{{ value }}</p>
+  {% if delta %}
+  <p class="mt-1 flex items-center gap-1 text-xs {% if delta_dir == 'down' %}text-red-600{% else %}text-emerald-600{% endif %}">
+    <i data-lucide="{% if delta_dir == 'down' %}trending-down{% else %}trending-up{% endif %}" class="h-3.5 w-3.5"></i>
+    {{ delta }} <span class="text-slate-400">{% trans "vs yesterday" %}</span>
+  </p>
+  {% endif %}
+  {% if progress is not None %}
+  <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted dark:bg-slate-800">
+    <div class="h-full rounded-full bg-clinical-500" style="width: {{ progress }}%"></div>
+  </div>
+  {% endif %}
+</article>

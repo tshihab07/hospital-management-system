@@ -1,0 +1,20 @@
+{% load i18n %}
+{% if field.field.widget.input_type == "checkbox" %}
+  <div class="{{ wrapper_class|default:'mb-4' }}">
+    <label class="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+      {{ field }}
+      <span>{{ field.label }}</span>
+    </label>
+    {% if field.help_text %}<p class="mt-1 text-xs text-slate-400">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="mt-1 text-xs text-red-600">{{ error }}</p>{% endfor %}
+  </div>
+{% else %}
+  <div class="{{ wrapper_class|default:'mb-4' }}">
+    <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-200">
+      {{ field.label }}{% if field.field.required %} <span class="text-red-500">*</span>{% endif %}
+    </label>
+    {{ field }}
+    {% if field.help_text %}<p class="mt-1 text-xs text-slate-400">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="mt-1 text-xs text-red-600">{{ error }}</p>{% endfor %}
+  </div>
+{% endif %}

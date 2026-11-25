@@ -1,0 +1,17 @@
+{% load i18n %}
+<div class="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-surface/60 px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900/60">
+  <span class="grid h-14 w-14 place-items-center rounded-2xl bg-primary-50 text-primary-500 dark:bg-primary-500/10">
+    <i data-lucide="{{ icon|default:'inbox' }}" class="h-7 w-7"></i>
+  </span>
+  <h3 class="mt-4 font-display text-lg font-semibold text-slate-700 dark:text-slate-200">
+    {% trans title|default:_("Nothing here yet") %}
+  </h3>
+  <p class="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">
+    {% trans message|default:_("Records will appear here as they are created.") %}
+  </p>
+  {% if action_url %}
+  <a href="{{ action_url }}" class="mt-5 inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+    <i data-lucide="{{ action_icon|default:'plus' }}" class="h-4 w-4"></i> {% trans action_label|default:_("Create") %}
+  </a>
+  {% endif %}
+</div>
