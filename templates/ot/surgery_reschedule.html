@@ -1,0 +1,33 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Reschedule surgery" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'ot:surgery_list' %}" class="hover:text-primary-600">{% trans "Operation Theatre" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'ot:surgery_detail' surgery.pk %}" class="hover:text-primary-600">{{ surgery.surgery_no }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Reschedule" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Reschedule surgery" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ surgery.surgery_no }} · {{ surgery.procedure_name }}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="max-w-3xl rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% csrf_token %}
+  <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+    {% for field in form %}{% include "components/form_field.html" with field=field %}{% endfor %}
+  </div>
+  <div class="mt-2 flex items-center gap-2">
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="save" class="h-4 w-4"></i> {% trans "Reschedule" %}</button>
+    <a href="{% url 'ot:surgery_detail' surgery.pk %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Operation Theatre" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Operation Theatre" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Operation Theatre" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Surgery scheduling, notes and OT utilisation." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'ot:calendar' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="calendar-days" class="h-4 w-4"></i> {% trans "Calendar" %}</a>
+    <a href="{% url 'ot:utilization' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="bar-chart-3" class="h-4 w-4"></i> {% trans "Utilisation" %}</a>
+    <a href="{% url 'ot:room_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="door-open" class="h-4 w-4"></i> {% trans "OT rooms" %}</a>
+    <a href="{% url 'ot:surgery_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Schedule surgery" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="border-b border-slate-100 p-4 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200">{% trans "Today's list" %}</div>
+  {% if today %}
+  <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+    {% for s in today %}
+    <li class="flex items-center justify-between gap-3 p-4">
+      <div>
+        <a href="{% url 'ot:surgery_detail' s.pk %}" class="font-medium text-primary-600 hover:underline">{{ s.start_time|time:"H:i" }} · {{ s.procedure_name }}</a>
+        <div class="text-xs text-slate-500 dark:text-slate-400">{{ s.patient.display_name }} · {{ s.ot_room }}</div>
+      </div>
+      {% status_badge s.get_status_display "info" %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  {% include "components/empty_state.html" with message="No surgeries scheduled for today." %}
+  {% endif %}
+</section>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="grid grid-cols-1 gap-3 border-b border-slate-100 p-4 sm:grid-cols-3 lg:grid-cols-6 dark:border-slate-800">
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Search" %}</label>{{ filters.q }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Status" %}</label>{{ filters.status }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "Priority" %}</label>{{ filters.priority }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "OT room" %}</label>{{ filters.room }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "From" %}</label>{{ filters.date_from }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "To" %}</label>{{ filters.date_to }}</div>
+    <div class="sm:col-span-3 lg:col-span-6">
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+    </div>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "Surgery #" %}</th>
+          <th class="px-4 py-3">{% trans "Date / Time" %}</th>
+          <th class="px-4 py-3">{% trans "Patient" %}</th>
+          <th class="px-4 py-3">{% trans "Procedure" %}</th>
+          <th class="px-4 py-3">{% trans "OT room" %}</th>
+          <th class="px-4 py-3">{% trans "Priority" %}</th>
+          <th class="px-4 py-3">{% trans "Status" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for s in surgeries %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3"><a href="{% url 'ot:surgery_detail' s.pk %}" class="font-medium text-primary-600 hover:underline">{{ s.surgery_no|default:"—" }}</a></td>
+          <td class="px-4 py-3">{{ s.scheduled_date|date:"d/m/Y" }} · {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}</td>
+          <td class="px-4 py-3">{{ s.patient.display_name }}</td>
+          <td class="px-4 py-3">{{ s.procedure_name }}</td>
+          <td class="px-4 py-3">{{ s.ot_room }}</td>
+          <td class="px-4 py-3">{{ s.get_priority_display }}</td>
+          <td class="px-4 py-3">{% status_badge s.get_status_display "info" %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">{% trans "No surgeries found." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

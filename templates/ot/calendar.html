@@ -1,0 +1,62 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "OT calendar" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'ot:surgery_list' %}" class="hover:text-primary-600">{% trans "Operation Theatre" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Calendar" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "OT calendar" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ calendar.week_start|date:"d/m/Y" }} – {{ calendar.week_end|date:"d/m/Y" }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'ot:calendar' %}?week_start={{ prev_week }}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="chevron-left" class="h-4 w-4"></i> {% trans "Prev" %}</a>
+    <a href="{% url 'ot:calendar' %}?week_start={{ next_week }}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Next" %} <i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+    <a href="{% url 'ot:surgery_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Schedule" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="overflow-x-auto rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <table class="w-full min-w-[900px] border-collapse text-left text-xs">
+    <thead class="bg-muted text-slate-500 dark:bg-slate-800">
+      <tr>
+        <th class="sticky left-0 z-10 bg-muted px-3 py-3 dark:bg-slate-800">{% trans "OT room" %}</th>
+        {% for day in calendar.days %}
+        <th class="border-l border-slate-200 px-3 py-3 dark:border-slate-700">{{ day|date:"D d/m" }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in calendar.rows %}
+      <tr class="border-t border-slate-100 dark:border-slate-800">
+        <td class="sticky left-0 z-10 bg-surface px-3 py-3 font-medium dark:bg-slate-900">{{ row.room.name }}</td>
+        {% for cell in row.cells %}
+        <td class="border-l border-slate-100 align-top px-2 py-2 dark:border-slate-800">
+          <div class="space-y-1">
+            {% for s in cell.surgeries %}
+            <a href="{% url 'ot:surgery_detail' s.pk %}" class="block rounded-lg border border-primary-200 bg-primary-50 px-2 py-1 text-primary-700 hover:bg-primary-100 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-300">
+              <span class="font-medium">{{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}</span>
+              <span class="block truncate">{{ s.procedure_name }}</span>
+              <span class="block truncate text-[10px] opacity-80">{{ s.patient.display_name }}</span>
+            </a>
+            {% endfor %}
+          </div>
+        </td>
+        {% endfor %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="8" class="px-3 py-10 text-center text-slate-500">{% trans "No OT rooms configured." %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

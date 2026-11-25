@@ -1,0 +1,122 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ surgery.surgery_no|default:_("Surgery") }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'ot:surgery_list' %}" class="hover:text-primary-600">{% trans "Operation Theatre" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ surgery.surgery_no|default:"Surgery" }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+  <div>
+    <div class="flex items-center gap-3">
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ surgery.procedure_name }}</h1>
+      {% status_badge surgery.get_status_display "info" %}
+    </div>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ surgery.surgery_no }} · {{ surgery.patient.display_name }} · {{ surgery.scheduled_date|date:"d/m/Y" }} {{ surgery.start_time|time:"H:i" }}–{{ surgery.end_time|time:"H:i" }}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'ot:preop_checklist' surgery.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="clipboard-check" class="h-4 w-4"></i> {% trans "Pre-op" %}</a>
+    <a href="{% url 'ot:anesthesia' surgery.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="syringe" class="h-4 w-4"></i> {% trans "Anaesthesia" %}</a>
+    <a href="{% url 'ot:intraop_note' surgery.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="file-text" class="h-4 w-4"></i> {% trans "Intra-op" %}</a>
+    <a href="{% url 'ot:postop_note' surgery.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="heart-pulse" class="h-4 w-4"></i> {% trans "Post-op" %}</a>
+    {% if surgery.status != "cancelled" and surgery.status != "completed" %}
+    <a href="{% url 'ot:surgery_reschedule' surgery.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="calendar-clock" class="h-4 w-4"></i> {% trans "Reschedule" %}</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex flex-wrap items-center gap-2">
+  {% if surgery.status == "scheduled" %}
+  <form method="post" action="{% url 'ot:surgery_action' surgery.pk 'confirm' %}">{% csrf_token %}<button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-sky-500 px-4 text-sm font-medium text-white hover:bg-sky-600"><i data-lucide="check" class="h-4 w-4"></i> {% trans "Confirm" %}</button></form>
+  {% endif %}
+  {% if surgery.status == "scheduled" or surgery.status == "confirmed" %}
+  <form method="post" action="{% url 'ot:surgery_action' surgery.pk 'start' %}">{% csrf_token %}<button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600"><i data-lucide="play" class="h-4 w-4"></i> {% trans "Start surgery" %}</button></form>
+  {% endif %}
+  {% if surgery.status == "in_progress" %}
+  <form method="post" action="{% url 'ot:surgery_action' surgery.pk 'complete' %}">{% csrf_token %}<button class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="check-check" class="h-4 w-4"></i> {% trans "Complete" %}</button></form>
+  {% endif %}
+  {% if surgery.status != "cancelled" and surgery.status != "completed" %}
+  <form method="post" action="{% url 'ot:surgery_cancel' surgery.pk %}" onsubmit="return confirm('{% trans "Cancel this surgery?" %}')">{% csrf_token %}<input type="hidden" name="reason" value="Cancelled from OT module" /><button class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-red-200 px-4 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:hover:bg-red-500/10"><i data-lucide="x" class="h-4 w-4"></i> {% trans "Cancel surgery" %}</button></form>
+  {% endif %}
+</div>
+
+{% if checklist and not checklist.is_complete %}
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10">
+  <i data-lucide="alert-triangle" class="mr-1 inline h-4 w-4"></i>
+  {% trans "Pre-op checklist incomplete — surgery cannot start." %} {% trans "Missing:" %} {{ checklist.missing_items|join:", " }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-4 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Surgery details" %}</div>
+    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm">
+      <div><dt class="text-xs uppercase text-slate-400">{% trans "Patient" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ surgery.patient.display_name }}</dd></div>
+      <div><dt class="text-xs uppercase text-slate-400">{% trans "Surgeon" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ surgery.surgeon.name_en }}</dd></div>
+      <div><dt class="text-xs uppercase text-slate-400">{% trans "OT room" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ surgery.ot_room }}</dd></div>
+      <div><dt class="text-xs uppercase text-slate-400">{% trans "Priority" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ surgery.get_priority_display }}</dd></div>
+      <div><dt class="text-xs uppercase text-slate-400">{% trans "Admission" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ surgery.admission.ip_number|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase text-slate-400">{% trans "Diagnosis" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ surgery.diagnosis|default:"—" }}</dd></div>
+    </dl>
+    {% if surgery.notes %}<p class="mt-4 text-sm text-slate-600 dark:text-slate-300">{{ surgery.notes }}</p>{% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Documentation" %}</div>
+    <ul class="space-y-2 text-sm">
+      <li class="flex items-center justify-between"><span>{% trans "Pre-op checklist" %}</span>{% if checklist and checklist.is_complete %}<span class="text-emerald-600">{% trans "Complete" %}</span>{% elif checklist %}<span class="text-amber-600">{% trans "Incomplete" %}</span>{% else %}<span class="text-slate-400">{% trans "Pending" %}</span>{% endif %}</li>
+      <li class="flex items-center justify-between"><span>{% trans "Anaesthesia" %}</span><span class="text-slate-500">{% if anesthesia %}{{ anesthesia.get_anesthesia_type_display }}{% else %}{% trans "Pending" %}{% endif %}</span></li>
+      <li class="flex items-center justify-between"><span>{% trans "Intra-op note" %}</span><span class="text-slate-500">{% if intraop %}{% trans "Recorded" %}{% else %}{% trans "Pending" %}{% endif %}</span></li>
+      <li class="flex items-center justify-between"><span>{% trans "Post-op note" %}</span><span class="text-slate-500">{% if postop %}{{ postop.get_condition_display }}{% else %}{% trans "Pending" %}{% endif %}</span></li>
+    </ul>
+  </section>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Surgical team" %}</div>
+    <ul class="mb-4 space-y-1 text-sm">
+      {% for m in team %}<li class="flex items-center justify-between"><span>{{ m.display_name }}</span><span class="text-xs text-slate-400">{{ m.get_role_display }}</span></li>
+      {% empty %}<li class="text-slate-500">{% trans "No team members." %}</li>{% endfor %}
+    </ul>
+    <form method="post" action="{% url 'ot:team_add' surgery.pk %}" class="space-y-2">
+      {% csrf_token %}
+      {% for field in team_form %}{% include "components/form_field.html" with field=field %}{% endfor %}
+      <button class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="user-plus" class="h-4 w-4"></i> {% trans "Add" %}</button>
+    </form>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Implants" %}</div>
+    <ul class="mb-4 space-y-1 text-sm">
+      {% for i in implants %}<li class="flex items-center justify-between"><span>{{ i.name }}{% if i.serial_no %} · {{ i.serial_no }}{% endif %}</span><span class="text-xs text-slate-400">{{ i.total|bdt }}</span></li>
+      {% empty %}<li class="text-slate-500">{% trans "No implants." %}</li>{% endfor %}
+    </ul>
+    <form method="post" action="{% url 'ot:implant_add' surgery.pk %}" class="space-y-2">
+      {% csrf_token %}
+      {% for field in implant_form %}{% include "components/form_field.html" with field=field %}{% endfor %}
+      <button class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Add implant" %}</button>
+    </form>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Consumables" %}</div>
+    <ul class="mb-4 space-y-1 text-sm">
+      {% for c in consumables %}<li class="flex items-center justify-between"><span>{{ c.item }} × {{ c.quantity }}</span><span class="text-xs text-slate-400">{{ c.total|bdt }}</span></li>
+      {% empty %}<li class="text-slate-500">{% trans "No consumables." %}</li>{% endfor %}
+    </ul>
+    <form method="post" action="{% url 'ot:consumable_add' surgery.pk %}" class="space-y-2">
+      {% csrf_token %}
+      {% for field in consumable_form %}{% include "components/form_field.html" with field=field %}{% endfor %}
+      <button class="inline-flex h-9 items-center gap-2 rounded-[10px] bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "Add consumable" %}</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "OT utilisation" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'ot:surgery_list' %}" class="hover:text-primary-600">{% trans "Operation Theatre" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Utilisation" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "OT utilisation" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ report.start|date:"d/m/Y" }} – {{ report.end|date:"d/m/Y" }} · {{ report.days }} {% trans "days" %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+  {% include "components/kpi_card.html" with label="Surgeries" value=report.total_surgeries icon="scissors" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Overall utilisation %" value=report.overall_utilization icon="activity" accent="#0EA5E9" %}
+  {% include "components/kpi_card.html" with label="Working days" value=report.days icon="calendar-days" accent="#10B981" %}
+</div>
+
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "From" %}</label>{{ filters.start }}</div>
+    <div><label class="mb-1 block text-xs font-medium text-slate-500">{% trans "To" %}</label>{{ filters.end }}</div>
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Apply" %}</button>
+  </form>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="bg-muted text-xs uppercase text-slate-500 dark:bg-slate-800">
+        <tr>
+          <th class="px-4 py-3">{% trans "OT room" %}</th>
+          <th class="px-4 py-3">{% trans "Surgeries" %}</th>
+          <th class="px-4 py-3">{% trans "Used (min)" %}</th>
+          <th class="px-4 py-3">{% trans "Available (min)" %}</th>
+          <th class="px-4 py-3">{% trans "Utilisation" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in report.rows %}
+        <tr class="hover:bg-muted/60">
+          <td class="px-4 py-3 font-medium">{{ row.room.name }}</td>
+          <td class="px-4 py-3">{{ row.surgery_count }}</td>
+          <td class="px-4 py-3">{{ row.used_minutes }}</td>
+          <td class="px-4 py-3">{{ row.available_minutes }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <div class="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><div class="h-full rounded-full bg-primary-500" style="width: {{ row.utilization }}%"></div></div>
+              <span>{{ row.utilization }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">{% trans "No OT rooms." %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">{% trans "Top procedures" %}</div>
+  <ul class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+    {% for p in report.top_procedures %}
+    <li class="flex items-center justify-between"><span>{{ p.procedure_name }}</span><span class="text-slate-400">{{ p.c }}</span></li>
+    {% empty %}
+    <li class="text-slate-500">{% trans "No procedures in range." %}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}
