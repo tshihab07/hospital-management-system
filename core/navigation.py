@@ -118,13 +118,88 @@ NAV_SECTIONS: list[dict] = [
         "items": [
             {"label": "Billing", "url": "billing:bill_list", "icon": "receipt"},
             {"label": "Payments", "url": "billing:payment_list", "icon": "banknote"},
+            {
+                "label": "Daily Collection",
+                "url": "billing:daily_collection",
+                "icon": "hand-coins",
+            },
+            {"label": "Refunds", "url": "billing:refund_list", "icon": "undo-2"},
+            {
+                "label": "Credit Notes",
+                "url": "billing:credit_note_list",
+                "icon": "file-minus",
+            },
+            {"label": "Packages", "url": "billing:package_list", "icon": "package"},
+            {
+                "label": "Accounting",
+                "url": "accounting:dashboard",
+                "icon": "calculator",
+            },
             {"label": "Accounts", "url": "accounting:ledger", "icon": "book-open"},
+            {"label": "Journals", "url": "accounting:journal_list", "icon": "book"},
             {
                 "label": "Trial Balance",
                 "url": "accounting:trial_balance",
                 "icon": "scale",
             },
+            {
+                "label": "Income Statement",
+                "url": "accounting:income_statement",
+                "icon": "trending-up",
+            },
+            {
+                "label": "Balance Sheet",
+                "url": "accounting:balance_sheet",
+                "icon": "landmark",
+            },
+            {
+                "label": "Receivables",
+                "url": "accounting:receivables",
+                "icon": "hand-coins",
+            },
+            {"label": "Payables", "url": "accounting:payables", "icon": "truck"},
+            {"label": "Expenses", "url": "accounting:expense_list", "icon": "receipt-text"},
+            {
+                "label": "Vendor Payments",
+                "url": "accounting:vendor_payment_list",
+                "icon": "banknote",
+            },
+            {"label": "VAT Return", "url": "accounting:vat_return", "icon": "percent"},
             {"label": "Payroll", "url": "payroll:run_list", "icon": "wallet-cards"},
+        ],
+    },
+    {
+        "label": "Reports & Analytics",
+        "icon": "bar-chart-3",
+        "items": [
+            {"label": "Analytics", "url": "reports:dashboard", "icon": "layout-dashboard"},
+            {"label": "Daily Census", "url": "reports:daily_census", "icon": "bed-double"},
+            {
+                "label": "Monthly Revenue",
+                "url": "reports:monthly_revenue",
+                "icon": "trending-up",
+            },
+            {
+                "label": "Department P&L",
+                "url": "reports:department_profitability",
+                "icon": "scale",
+            },
+            {
+                "label": "Bed Occupancy",
+                "url": "reports:bed_occupancy",
+                "icon": "layout-grid",
+            },
+            {
+                "label": "ER Wait Times",
+                "url": "reports:er_wait_times",
+                "icon": "siren",
+            },
+            {
+                "label": "Schedules",
+                "url": "reports:schedule_list",
+                "icon": "calendar-clock",
+            },
+            {"label": "Runs", "url": "reports:run_list", "icon": "history"},
         ],
     },
     {
