@@ -1,0 +1,55 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'masters:home' %}" class="hover:text-primary-600">{% trans "Master Data" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'masters:master_list' spec.slug %}" class="hover:text-primary-600">{{ spec.label_plural }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Import" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ page_title }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Upload a CSV file to create or update records in bulk." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid max-w-4xl grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+      <div class="mb-4 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{{ form.non_field_errors }}</div>
+      {% endif %}
+      {% include "components/form_field.html" with field=form.csv_file %}
+      {% include "components/form_field.html" with field=form.skip_errors wrapper_class="mb-0" %}
+      <div class="mt-5 flex items-center gap-3">
+        <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+          <i data-lucide="upload" class="h-4 w-4"></i> {% trans "Import" %}
+        </button>
+        <a href="{% url 'masters:master_list' spec.slug %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+      </div>
+    </form>
+  </section>
+
+  <aside class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Expected columns" %}</h2>
+    <ul class="mt-3 space-y-1 text-sm text-slate-600 dark:text-slate-300">
+      {% for column in columns %}
+      <li class="rounded bg-muted px-2 py-1 font-mono text-xs dark:bg-slate-800">{{ column }}</li>
+      {% empty %}
+      <li class="text-slate-400">{% trans "No importable columns defined." %}</li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'masters:master_import' spec.slug %}?template=1" class="mt-4 inline-flex h-9 items-center gap-2 rounded-[10px] border border-slate-200 px-3 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="download" class="h-4 w-4"></i> {% trans "Download template" %}
+    </a>
+  </aside>
+</div>
+{% endblock %}

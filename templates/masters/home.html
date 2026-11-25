@@ -1,0 +1,43 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Master Data" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Master Data" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Master Data" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Configure the building blocks used across the hospital." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  {% for group in groups %}
+  <section>
+    <h2 class="mb-3 font-display text-lg font-semibold text-slate-700 dark:text-slate-200">{% trans group.name %}</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {% for card in group.cards %}
+      <a href="{{ card.url }}" class="group rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm transition hover:border-primary-400 hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+        <div class="flex items-center justify-between">
+          <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/10 dark:text-primary-300">
+            <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
+          </span>
+          <span class="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ card.count }}</span>
+        </div>
+        <p class="mt-4 font-medium text-slate-700 group-hover:text-primary-600 dark:text-slate-200">{{ card.label }}</p>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% empty %}
+  <div class="rounded-2xl border border-slate-200 bg-surface p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    {% include "components/empty_state.html" with icon="database" title="No masters available" message="You do not have permission to manage master data." %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

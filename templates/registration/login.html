@@ -1,0 +1,55 @@
+{% extends "layouts/auth.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Sign in" %}{% endblock %}
+
+{% block auth_content %}
+<div class="mb-6">
+  <h2 class="font-display text-xl font-bold text-slate-800 dark:text-slate-100">{% trans "Sign in" %}</h2>
+  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{% trans "Enter your credentials to access the control tower." %}</p>
+</div>
+
+{% if form.non_field_errors %}
+<div class="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+  <i data-lucide="alert-circle" class="mt-0.5 h-4 w-4 shrink-0"></i>
+  <div>
+    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="{% url 'accounts:login' %}" class="space-y-4" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ next }}">
+
+  <div>
+    <label for="{{ form.username.id_for_label }}" class="mb-1 block text-[13px] font-semibold text-slate-600 dark:text-slate-300">
+      {% trans "Username" %}
+    </label>
+    <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
+           value="{{ form.username.value|default:'' }}" autocomplete="username" autofocus required
+           class="h-10 w-full rounded-[10px] border border-slate-200 bg-page px-3 text-sm text-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+  </div>
+
+  <div>
+    <label for="{{ form.password.id_for_label }}" class="mb-1 block text-[13px] font-semibold text-slate-600 dark:text-slate-300">
+      {% trans "Password" %}
+    </label>
+    <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
+           autocomplete="current-password" required
+           class="h-10 w-full rounded-[10px] border border-slate-200 bg-page px-3 text-sm text-slate-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+  </div>
+
+  <div class="flex items-center justify-between">
+    <label class="inline-flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+      <input type="checkbox" name="remember_me" class="h-4 w-4 rounded border-slate-300 text-primary-500 focus:ring-primary-500">
+      {% trans "Remember me" %}
+    </label>
+    <a href="{% url 'accounts:password_reset' %}" class="text-sm font-medium text-primary-600 hover:text-primary-700">{% trans "Forgot password?" %}</a>
+  </div>
+
+  <button type="submit" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-primary-500 text-sm font-semibold text-white transition hover:bg-primary-600">
+    <i data-lucide="log-in" class="h-4 w-4"></i> {% trans "Sign in" %}
+  </button>
+</form>
+{% endblock %}
