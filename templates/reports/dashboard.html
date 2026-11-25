@@ -1,0 +1,128 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Analytics" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Analytics" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Analytics" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Hospital-wide KPIs and operational reports." %} · {{ kpis.day|ihms_date }}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'reports:run_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="history" class="h-4 w-4"></i> {% trans "Runs" %}</a>
+    <a href="{% url 'reports:schedule_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="calendar-clock" class="h-4 w-4"></i> {% trans "Schedules" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if alerts %}
+<div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+  {% for alert in alerts %}
+  <a href="{% nav_url alert.url_name %}" class="flex items-center gap-3 rounded-2xl border p-4 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md {% if alert.level == 'danger' %}border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-200{% elif alert.level == 'warning' %}border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200{% else %}border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-900/40 dark:bg-sky-900/20 dark:text-sky-200{% endif %}">
+    <i data-lucide="{% if alert.level == 'info' %}info{% else %}alert-triangle{% endif %}" class="h-5 w-5 shrink-0"></i>
+    <span class="flex-1">{{ alert.title }}</span>
+    <span class="font-display font-bold tabular">{{ alert.count }}</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Patients today" value=kpis.patients.registered_today icon="user-plus" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Appointments today" value=kpis.opd.appointments_today icon="calendar-check" accent="#0EA5E9" %}
+  {% include "components/kpi_card.html" with label="Admitted" value=kpis.ipd.admitted icon="bed-double" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Collected today" value=kpis.billing.collected_today|bdt icon="hand-coins" accent="#F59E0B" %}
+</div>
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <article class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{% trans "Bed occupancy" %}</p>
+    <p class="mt-2 font-display text-3xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.ipd.occupancy_pct }}%</p>
+    <p class="mt-1 text-xs text-slate-400">{{ kpis.ipd.beds_occupied }}/{{ kpis.ipd.beds_total }} {% trans "beds" %}</p>
+  </article>
+  <article class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{% trans "Emergency waiting" %}</p>
+    <p class="mt-2 font-display text-3xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.er.waiting }}</p>
+    <p class="mt-1 text-xs text-slate-400">{% trans "Longest wait" %}: {{ kpis.er.longest_wait }} {% trans "min" %}</p>
+  </article>
+  <article class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{% trans "Pending lab" %}</p>
+    <p class="mt-2 font-display text-3xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.lab.pending }}</p>
+    <p class="mt-1 text-xs text-slate-400">{% trans "Completed today" %}: {{ kpis.lab.completed_today }}</p>
+  </article>
+  <article class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{% trans "Net income (MTD)" %}</p>
+    <p class="mt-2 font-display text-3xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.accounting.net_income_mtd|bdt }}</p>
+    <p class="mt-1 text-xs text-slate-400">{% trans "Cash & bank" %}: {{ kpis.accounting.cash_and_bank|bdt }}</p>
+  </article>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Report catalogue" %}</h2>
+    </header>
+    <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-3">
+      {% for group in report_catalog %}
+      <div>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}</p>
+        <ul class="space-y-1.5 text-sm">
+          {% for item in group.reports %}
+          <li><a href="{% url item.url %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="file-text" class="h-3.5 w-3.5"></i> {{ item.label }}</a></li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Recent runs" %}</h2>
+        <a href="{% url 'reports:run_list' %}" class="text-xs text-primary-600 hover:underline">{% trans "All" %}</a>
+      </header>
+      <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+        {% for run in recent_runs %}
+        <li class="flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-medium text-slate-700 dark:text-slate-200"><a href="{% url 'reports:run_detail' run.pk %}" class="hover:text-primary-600">{{ run.get_report_type_display }}</a></p>
+            <p class="text-xs text-slate-400">{{ run.created_at|ihms_datetime }} · {{ run.get_report_format_display }}</p>
+          </div>
+          {% status_badge run.get_status_display run.status %}
+        </li>
+        {% empty %}
+        <li class="px-4 py-6 text-center text-slate-400">{% trans "No reports generated yet." %}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+        <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Active schedules" %}</h2>
+        <a href="{% url 'reports:schedule_list' %}" class="text-xs text-primary-600 hover:underline">{% trans "All" %}</a>
+      </header>
+      <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+        {% for schedule in schedules %}
+        <li class="flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-medium text-slate-700 dark:text-slate-200">{{ schedule.name }}</p>
+            <p class="text-xs text-slate-400">{{ schedule.get_frequency_display }} · {% trans "next" %} {{ schedule.next_run|ihms_datetime }}</p>
+          </div>
+          <span class="text-xs text-slate-400">{{ schedule.get_report_format_display }}</span>
+        </li>
+        {% empty %}
+        <li class="px-4 py-6 text-center text-slate-400">{% trans "No schedules configured." %}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

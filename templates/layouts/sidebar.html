@@ -1,0 +1,46 @@
+{% load static i18n ihms_tags %}
+<aside
+  class="fixed inset-y-0 left-0 z-40 flex w-[260px] -translate-x-full flex-col bg-primary-900 text-slate-300 transition-transform duration-200 lg:static lg:translate-x-0"
+  :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
+  aria-label="{% trans 'Main navigation' %}">
+
+  <div class="flex h-16 shrink-0 items-center gap-3 px-5">
+    <span class="grid h-9 w-9 place-items-center rounded-xl bg-primary-500 text-white">
+      <i data-lucide="cross" class="h-5 w-5"></i>
+    </span>
+    <div class="leading-tight">
+      <p class="font-display text-lg font-extrabold tracking-widest text-white">IHMS</p>
+      <p class="text-[10px] uppercase tracking-wider text-primary-200">{{ HOSPITAL_NAME }}</p>
+    </div>
+    <button type="button" class="ml-auto text-slate-400 hover:text-white lg:hidden" @click="sidebarOpen = false" aria-label="{% trans 'Close menu' %}">
+      <i data-lucide="x" class="h-5 w-5"></i>
+    </button>
+  </div>
+
+  <nav class="ihms-scroll flex-1 space-y-5 overflow-y-auto px-3 pb-6">
+    {% for section in nav_sections %}
+    <div>
+      <p class="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-primary-200/70">
+        {% trans section.label %}
+      </p>
+      <ul class="space-y-0.5">
+        {% for item in section.items %}
+        {% is_active_nav item.url as active_item %}
+        <li>
+          <a href="{% nav_url item.url %}"
+             class="group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors
+                    {% if active_item %}bg-primary-500/90 text-white{% else %}text-slate-300 hover:bg-white/5 hover:text-white{% endif %}">
+            <i data-lucide="{{ item.icon }}" class="h-[18px] w-[18px] shrink-0"></i>
+            <span class="truncate">{% trans item.label %}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  </nav>
+
+  <div class="border-t border-white/10 px-4 py-3 text-[11px] text-primary-200/60">
+    <p class="tabular">v1.0 · BST (UTC+6)</p>
+  </div>
+</aside>

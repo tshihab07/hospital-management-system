@@ -1,0 +1,27 @@
+{% extends "layouts/base.html" %}
+{% load static i18n %}
+
+{% block body %}
+<div class="relative grid min-h-screen place-items-center overflow-hidden px-4 py-10">
+  <div class="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-primary-500/10 blur-3xl"></div>
+  <div class="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-clinical-500/10 blur-3xl"></div>
+
+  <div class="relative w-full max-w-md">
+    <div class="mb-6 flex flex-col items-center text-center">
+      <span class="grid h-12 w-12 place-items-center rounded-2xl bg-primary-500 text-white shadow-md">
+        <i data-lucide="cross" class="h-6 w-6"></i>
+      </span>
+      <h1 class="mt-3 font-display text-2xl font-extrabold tracking-widest text-slate-800 dark:text-slate-100">IHMS</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">{{ HOSPITAL_NAME }}</p>
+    </div>
+
+    <div class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-lg dark:border-slate-800 dark:bg-slate-900 sm:p-8">
+      {% block auth_content %}{% endblock %}
+    </div>
+
+    <p class="mt-6 text-center text-xs text-slate-400">
+      {% trans "Integrated Hospital Management System" %} · {% trans "Secure area" %}
+    </p>
+  </div>
+</div>
+{% endblock %}

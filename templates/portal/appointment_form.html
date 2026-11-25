@@ -1,0 +1,51 @@
+{% extends "portal/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block portal_header %}
+<div class="mb-4 flex items-center gap-3">
+  <a href="{% url 'portal:appointments' %}" class="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-muted dark:hover:bg-slate-800">
+    <i data-lucide="arrow-left" class="h-5 w-5"></i>
+  </a>
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ page_title }}</h1>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if appointment %}
+<p class="mb-4 rounded-2xl border border-slate-200 bg-surface px-4 py-3 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+  {% blocktrans with name=appointment.doctor.name_en token=appointment.token_no %}Rescheduling your visit with {{ name }} (token #{{ token }}).{% endblocktrans %}
+</p>
+{% endif %}
+
+<form method="post" class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% csrf_token %}
+  {% for field in form %}
+    {% if field.name == "doctor" and reschedule and field.field.widget.input_type == "hidden" %}
+      {{ field }}
+    {% else %}
+      {% include "components/form_field.html" with field=field %}
+    {% endif %}
+  {% endfor %}
+  <button type="submit" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-primary-500 text-sm font-medium text-white hover:bg-primary-600">
+    <i data-lucide="check" class="h-4 w-4"></i>
+    {% if reschedule %}{% trans "Confirm reschedule" %}{% else %}{% trans "Confirm booking" %}{% endif %}
+  </button>
+</form>
+
+{% if not reschedule %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var doctor = document.getElementById("{{ form.doctor.id_for_label }}");
+    if (doctor) {
+      doctor.addEventListener("change", function () {
+        var url = new URL(window.location.href);
+        url.searchParams.set("doctor", doctor.value);
+        window.location.href = url.toString();
+      });
+    }
+  });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,87 @@
+{% load i18n ihms_tags reports_extras %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ report.title }}{% if report.start %} · {{ report.start|ihms_date }}–{{ report.end|ihms_date }}{% endif %}</title>
+  <style>
+    @page { size: A4 landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1e293b; font-size: 10px; margin: 0; }
+    h1, h2 { margin: 0; }
+    .muted { color: #64748b; }
+    .right { text-align: right; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0ea5e9; padding-bottom: 8px; margin-bottom: 12px; }
+    .hospital h1 { font-size: 16px; color: #0f172a; }
+    .hospital p { margin: 2px 0; }
+    .title { text-align: right; }
+    .title .badge { display: inline-block; background: #0ea5e9; color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 10px; }
+    .summary { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .summary .card { flex: 1 1 150px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px; }
+    .summary .k { color: #94a3b8; font-size: 9px; text-transform: uppercase; display: block; }
+    .summary .v { font-size: 14px; font-weight: 700; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 4px 6px; }
+    thead th { text-align: left; text-transform: uppercase; font-size: 8.5px; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+    tbody td { border-bottom: 1px solid #f1f5f9; }
+    tfoot td { border-top: 2px solid #cbd5e1; font-weight: 700; }
+    .footer { margin-top: 20px; font-size: 9px; color: #94a3b8; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="hospital">
+      <h1>{{ hospital.name_en|default:"Hospital" }}</h1>
+      {% if hospital.address %}<p class="muted">{{ hospital.address }}</p>{% endif %}
+      {% if hospital.phone %}<p class="muted">{{ hospital.phone }}</p>{% endif %}
+    </div>
+    <div class="title">
+      <span class="badge">{{ report.title }}</span>
+      {% if report.start %}<p class="muted" style="margin-top:6px;">{{ report.start|ihms_date }} – {{ report.end|ihms_date }}</p>{% endif %}
+      <p class="muted">{% trans "Generated" %}: {% now "d/m/Y H:i" %}</p>
+    </div>
+  </div>
+
+  {% if report.description %}<p class="muted" style="margin-bottom:10px;">{{ report.description }}</p>{% endif %}
+
+  {% if report.summary %}
+  <div class="summary">
+    {% for item in report.summary %}
+    <div class="card">
+      <span class="k">{{ item.label }}</span>
+      <span class="v">{{ item.value|rpt_cell:item.kind }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <table>
+    <thead>
+      <tr>
+        {% for column in report.columns %}
+        <th class="{% if report.align|rpt_at:forloop.counter0 == 'right' %}right{% endif %}">{{ column }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in report.rows %}
+      <tr>
+        {% for cell in row %}
+        <td class="{% if report.align|rpt_at:forloop.counter0 == 'right' %}right{% endif %}">{% rpt_cell_at cell report.formats forloop.counter0 %}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+    {% if report.totals %}
+    <tfoot>
+      <tr>
+        {% for cell in report.totals %}
+        <td class="{% if report.align|rpt_at:forloop.counter0 == 'right' %}right{% endif %}">{% rpt_cell_at cell report.formats forloop.counter0 %}</td>
+        {% endfor %}
+      </tr>
+    </tfoot>
+    {% endif %}
+  </table>
+
+  <div class="footer">{% trans "This is a computer-generated report." %} · {{ report.title }}</div>
+</body>
+</html>

@@ -1,0 +1,133 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags reports_extras %}
+
+{% block title %}{{ report.title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'reports:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Analytics" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ report.title }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ report.title }}</h1>
+    {% if report.description %}<p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ report.description }}</p>{% endif %}
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    {% has_perm request.user "reports.export_hospitalreports" as can_export %}
+    {% if can_export %}
+    <a href="{% querystring export='csv' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="file-text" class="h-4 w-4"></i> CSV</a>
+    <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+    <a href="{% querystring export='pdf' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="file-type" class="h-4 w-4"></i> PDF</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="get" class="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% for field in form %}
+  <div class="w-44">
+    <label class="mb-1 block text-xs font-medium text-slate-500" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+  </div>
+  {% endfor %}
+  <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Generate" %}</button>
+</form>
+
+{% if report.summary %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {% for item in report.summary %}
+  <article class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ item.label }}</p>
+    <p class="mt-2 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ item.value|rpt_cell:item.kind }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if report.chart and report.chart.values %}
+<section class="mb-6 rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <h2 class="mb-4 font-medium text-slate-700 dark:text-slate-200">{{ report.chart.label|default:"Trend" }}</h2>
+  <div class="h-72"><canvas id="report-chart"></canvas></div>
+</section>
+{{ report.chart|json_script:"report-chart-data" }}
+{% endif %}
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+    <h2 class="font-medium text-slate-700 dark:text-slate-200">{{ report.title }}</h2>
+    <span class="text-xs text-slate-400">{{ report.rows|length }} {% trans "rows" %}</span>
+  </div>
+  {% if report.rows %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          {% for column in report.columns %}
+          <th class="px-4 py-3 font-medium {% if report.align|rpt_at:forloop.counter0 == 'right' %}text-right{% endif %}">{{ column }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in report.rows %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          {% for cell in row %}
+          <td class="px-4 py-2.5 {% if report.align|rpt_at:forloop.counter0 == 'right' %}text-right tabular{% endif %} text-slate-600 dark:text-slate-300">{% rpt_cell_at cell report.formats forloop.counter0 %}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+      {% if report.totals %}
+      <tfoot class="border-t border-slate-200 bg-muted/50 text-sm font-semibold dark:border-slate-700 dark:bg-slate-800/50">
+        <tr>
+          {% for cell in report.totals %}
+          <td class="px-4 py-3 {% if report.align|rpt_at:forloop.counter0 == 'right' %}text-right tabular{% endif %} text-slate-700 dark:text-slate-200">{% rpt_cell_at cell report.formats forloop.counter0 %}</td>
+          {% endfor %}
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="bar-chart-3" title="No data for this period" message="Adjust the date range and generate again." %}</div>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+{% if report.chart and report.chart.values %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var node = document.getElementById("report-chart-data");
+    var canvas = document.getElementById("report-chart");
+    if (!node || !canvas || !window.Chart) { return; }
+    var cfg = JSON.parse(node.textContent);
+    new Chart(canvas, {
+      type: cfg.type || "bar",
+      data: {
+        labels: cfg.labels || [],
+        datasets: [{
+          label: cfg.label || "",
+          data: cfg.values || [],
+          backgroundColor: ["#4F46E5", "#0EA5E9", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6"],
+          borderColor: "#4F46E5",
+          borderWidth: cfg.type === "line" ? 2 : 0,
+          tension: 0.35,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: cfg.type === "doughnut" } },
+        scales: cfg.type === "doughnut" ? {} : { y: { beginAtZero: true } }
+      }
+    });
+  });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "portal/base.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Lab reports" %}{% endblock %}
+
+{% block portal_header %}
+<h1 class="mb-4 font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Lab & radiology reports" %}</h1>
+{% endblock %}
+
+{% block content %}
+<section class="mb-6">
+  <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Laboratory" %}</h2>
+  {% if reports %}
+  <div class="space-y-2">
+    {% for report in reports %}
+    <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-surface p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div>
+        <p class="font-mono text-sm text-slate-700 dark:text-slate-200">{{ report.report_no }}</p>
+        <p class="text-xs text-slate-400">{{ report.created_at|ihms_date }}</p>
+      </div>
+      <a href="{% url 'portal:lab_report_pdf' report.pk %}" target="_blank" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary-500 px-3 text-sm font-medium text-white hover:bg-primary-600">
+        <i data-lucide="download" class="h-4 w-4"></i> PDF
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-400 dark:border-slate-700">{% trans "No released lab reports yet." %}</p>
+  {% endif %}
+</section>
+
+{% if radiology %}
+<section>
+  <h2 class="mb-3 font-display text-lg font-semibold text-slate-800 dark:text-slate-100">{% trans "Radiology" %}</h2>
+  <div class="divide-y divide-slate-100 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:divide-slate-800 dark:border-slate-800 dark:bg-slate-900">
+    {% for record in radiology %}
+    <div class="flex items-center justify-between px-4 py-3">
+      <div>
+        <p class="font-mono text-sm text-slate-700 dark:text-slate-200">{{ record.report_no }}</p>
+        <p class="text-xs text-slate-400">{{ record.created_at|ihms_date }}</p>
+      </div>
+      {% status_badge record.get_status_display "info" %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

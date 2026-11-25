@@ -1,0 +1,32 @@
+{% extends "portal/base.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Confirm payment" %}{% endblock %}
+
+{% block portal_header %}
+<h1 class="mb-4 font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Confirm payment" %}</h1>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <dl class="space-y-3 text-sm">
+    <div class="flex justify-between"><dt class="text-slate-400">{% trans "Bill" %}</dt><dd class="font-mono text-slate-700 dark:text-slate-200">{{ bill.bill_no }}</dd></div>
+    <div class="flex justify-between"><dt class="text-slate-400">{% trans "Method" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ payment.get_method_display }}</dd></div>
+    <div class="flex justify-between"><dt class="text-slate-400">{% trans "Amount" %}</dt><dd class="font-semibold tabular text-slate-800 dark:text-slate-100">{{ payment.amount|bdt }}</dd></div>
+  </dl>
+
+  <p class="mt-4 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+    {% trans "Sandbox checkout — no real money moves in this environment." %}
+  </p>
+
+  <form method="post" class="mt-5 space-y-2">
+    {% csrf_token %}
+    <button type="submit" name="result" value="success" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700">
+      <i data-lucide="check-circle" class="h-4 w-4"></i> {% trans "Pay now" %}
+    </button>
+    <button type="submit" name="result" value="cancel" class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      {% trans "Cancel" %}
+    </button>
+  </form>
+</section>
+{% endblock %}

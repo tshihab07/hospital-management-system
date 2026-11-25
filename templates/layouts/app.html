@@ -1,0 +1,37 @@
+{% extends "layouts/base.html" %}
+{% load i18n %}
+
+{% block body %}
+<div class="flex min-h-screen" x-data="{ sidebarOpen: false }">
+
+  {# Mobile sidebar backdrop #}
+  <div x-show="sidebarOpen" x-transition.opacity
+       class="fixed inset-0 z-30 bg-slate-900/50 lg:hidden" @click="sidebarOpen = false"></div>
+
+  {% include "layouts/sidebar.html" %}
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    {% include "layouts/topbar.html" %}
+
+    <main class="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      {% block breadcrumb %}
+      <nav class="mb-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400" aria-label="{% trans 'Breadcrumb' %}">
+        <a href="{% url 'panel:home' %}" class="hover:text-primary-600">{% trans "Home" %}</a>
+        {% block breadcrumb_items %}{% endblock %}
+      </nav>
+      {% endblock %}
+
+      {% block page_header %}{% endblock %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="border-t border-slate-200 px-6 py-4 text-caption text-slate-400 dark:border-slate-800">
+      <div class="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-1 sm:flex-row">
+        <span>&copy; {% now "Y" %} {{ HOSPITAL_NAME }} · {% trans "Integrated Hospital Management System" %}</span>
+        <span class="tabular">v1.0</span>
+      </div>
+    </footer>
+  </div>
+</div>
+{% endblock %}
