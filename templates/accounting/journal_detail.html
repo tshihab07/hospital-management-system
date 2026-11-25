@@ -1,0 +1,99 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ entry.entry_no }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:journal_list' %}" class="text-primary-600 hover:underline">{% trans "Journals" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="font-mono text-slate-700 dark:text-slate-200">{{ entry.entry_no }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ entry.memo|default:entry.get_entry_type_display }}</h1>
+    <p class="mt-0.5 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <span class="font-mono">{{ entry.entry_no }}</span> · {{ entry.date|ihms_date }}
+      {% if entry.status == "posted" %}{% status_badge entry.get_status_display "success" %}
+      {% elif entry.status == "reversed" %}{% status_badge entry.get_status_display "danger" %}
+      {% else %}{% status_badge entry.get_status_display "warning" %}{% endif %}
+    </p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "accounting.post_journalentry" as can_post %}
+    {% has_perm request.user "accounting.reverse_journalentry" as can_reverse %}
+    {% if entry.status == "draft" and can_post %}
+    <form method="post" action="{% url 'accounting:journal_action' entry.pk 'post' %}">{% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="check" class="h-4 w-4"></i> {% trans "Post" %}</button>
+    </form>
+    {% endif %}
+    {% if entry.status == "posted" and can_reverse %}
+    <form method="post" action="{% url 'accounting:journal_action' entry.pk 'reverse' %}">{% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-red-200 px-4 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900/40 dark:hover:bg-red-900/20"><i data-lucide="undo-2" class="h-4 w-4"></i> {% trans "Reverse" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Account" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Description" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Debit" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Credit" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for line in entry.lines.all %}
+        <tr>
+          <td class="px-4 py-2.5"><span class="font-mono text-xs text-slate-500">{{ line.account.code }}</span> {{ line.account.name }}</td>
+          <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">{{ line.description|default:"—" }}
+            {% if line.department %}<span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800">{{ line.department }}</span>{% endif %}
+            {% if line.doctor %}<span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500 dark:bg-slate-800">{{ line.doctor }}</span>{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-right tabular">{% if line.debit %}{{ line.debit|bdt }}{% endif %}</td>
+          <td class="px-4 py-2.5 text-right tabular">{% if line.credit %}{{ line.credit|bdt }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="border-t-2 border-slate-200 font-semibold dark:border-slate-700">
+        <tr>
+          <td colspan="2" class="px-4 py-3 text-right text-slate-500">{% trans "Totals" %}</td>
+          <td class="px-4 py-3 text-right tabular">{{ entry.total_debit|bdt }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ entry.total_credit|bdt }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-4 font-medium text-slate-700 dark:text-slate-200">{% trans "Details" %}</h2>
+    <dl class="space-y-3 text-sm">
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Type" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.get_entry_type_display }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Reference" %}</dt><dd class="font-mono text-xs text-slate-700 dark:text-slate-200">{{ entry.reference|default:"—" }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Period" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.period|default:"—" }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Source" %}</dt><dd class="font-mono text-xs text-slate-700 dark:text-slate-200">{{ entry.source_type|default:"—" }} {{ entry.source_id }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Created by" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.created_by|default:"—" }}</dd></div>
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Posted by" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ entry.posted_by|default:"—" }}</dd></div>
+      {% if entry.reversal_of %}
+      <div class="flex justify-between gap-4"><dt class="text-slate-500">{% trans "Reversal of" %}</dt><dd><a href="{% url 'accounting:journal_detail' entry.reversal_of.pk %}" class="font-mono text-xs text-primary-600 hover:underline">{{ entry.reversal_of.entry_no }}</a></dd></div>
+      {% endif %}
+    </dl>
+    {% if entry.reversals.all %}
+    <h3 class="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{% trans "Reversed by" %}</h3>
+    <ul class="space-y-1 text-sm">
+      {% for rev in entry.reversals.all %}
+      <li><a href="{% url 'accounting:journal_detail' rev.pk %}" class="font-mono text-xs text-primary-600 hover:underline">{{ rev.entry_no }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

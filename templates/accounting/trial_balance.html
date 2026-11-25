@@ -1,0 +1,76 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Trial balance" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Trial balance" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Trial balance" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "As of" %} {{ tb.as_of|ihms_date }}</p>
+  </div>
+  <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-48">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="{{ form.as_of.id_for_label }}">{{ form.as_of.label }}</label>
+      {{ form.as_of }}
+    </div>
+    <label class="flex h-11 items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+      <input type="checkbox" name="include_zero" value="1" {% if include_zero %}checked{% endif %} class="h-4 w-4 rounded border-slate-300"> {% trans "Include zero balances" %}
+    </label>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Generate" %}</button>
+  </form>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Code" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Account" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Debit" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Credit" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in tb.rows %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-2.5 font-mono text-xs text-slate-500">{{ row.account.code }}</td>
+          <td class="px-4 py-2.5"><a href="{% url 'accounting:ledger_detail' row.account.pk %}" class="text-slate-700 hover:text-primary-600 dark:text-slate-200">{{ row.account.name }}</a></td>
+          <td class="px-4 py-2.5 text-right tabular">{% if row.debit %}{{ row.debit|bdt }}{% endif %}</td>
+          <td class="px-4 py-2.5 text-right tabular">{% if row.credit %}{{ row.credit|bdt }}{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-8 text-center text-slate-500">{% trans "No postings yet." %}</td></tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="border-t-2 border-slate-200 font-semibold dark:border-slate-700">
+        <tr>
+          <td colspan="2" class="px-4 py-3 text-right text-slate-500">{% trans "Totals" %}</td>
+          <td class="px-4 py-3 text-right tabular">{{ tb.total_debit|bdt }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ tb.total_credit|bdt }}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  <div class="border-t border-slate-100 p-4 dark:border-slate-800">
+    {% if tb.is_balanced %}
+      {% status_badge "Balanced" "success" %}
+    {% else %}
+      {% status_badge "Out of balance" "danger" %}
+      <span class="ml-2 text-sm text-slate-500">{% trans "Difference" %}: {{ tb.difference|bdt }}</span>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

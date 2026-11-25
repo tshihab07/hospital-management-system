@@ -1,0 +1,89 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Chart of accounts" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Chart of accounts" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Chart of accounts" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "The hospital's ledger accounts, grouped by type." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "accounting.add_account" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'accounting:account_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "New account" %}</a>
+    {% endif %}
+    <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-44">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_account_type">{% trans "Type" %}</label>
+      <select name="account_type" id="id_account_type" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <option value="">{% trans "All" %}</option>
+        {% for value, label in account_types %}
+        <option value="{{ value }}" {% if account_type == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="w-64">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_search">{% trans "Search" %}</label>
+      <input type="text" name="search" id="id_search" value="{{ search }}" class="h-11 w-full rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+  </form>
+
+  {% if tree %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Code" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Account" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Type" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Normal" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Balance" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in tree %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-2.5 font-mono text-xs text-slate-500" style="padding-left: calc(1rem + {{ row.depth }} * 1.5rem)">{{ row.account.code }}</td>
+          <td class="px-4 py-2.5 {% if row.account.is_group %}font-semibold text-slate-700 dark:text-slate-200{% endif %}">
+            {% if row.account.is_group %}
+              <i data-lucide="folder" class="mr-1 inline h-3.5 w-3.5 text-slate-400"></i>
+            {% endif %}
+            {{ row.account.name }}
+            {% if row.account.system_key %}<span class="ml-1 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] uppercase text-slate-400 dark:bg-slate-800">{% trans "system" %}</span>{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">{{ row.account.get_account_type_display }}</td>
+          <td class="px-4 py-2.5 text-slate-500">{{ row.account.get_normal_balance_display }}</td>
+          <td class="px-4 py-2.5 text-right tabular">{{ row.balance|bdt }}</td>
+          <td class="px-4 py-2.5 text-right">
+            <a href="{% url 'accounting:ledger_detail' row.account.pk %}" class="text-primary-600 hover:underline">{% trans "Ledger" %}</a>
+            {% has_perm request.user "accounting.change_account" as can_change %}
+            {% if can_change %}<a href="{% url 'accounting:account_update' row.account.pk %}" class="ml-2 text-slate-500 hover:underline">{% trans "Edit" %}</a>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="book-open" title="No accounts" message="Seed the chart of accounts to get started." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

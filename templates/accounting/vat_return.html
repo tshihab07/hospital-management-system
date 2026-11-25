@@ -1,0 +1,40 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "VAT return" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "VAT return" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "VAT return" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "NBR-style output vs input VAT summary." %}</p>
+  </div>
+  <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-2xl rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    {% for field in form %}
+    <div class="w-44">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="{{ field.id_for_label }}">{{ field.label }}</label>
+      {{ field }}
+    </div>
+    {% endfor %}
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Generate" %}</button>
+  </form>
+  <dl class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Output VAT (sales)" %}</dt><dd class="tabular font-medium">{{ vat.output_vat|bdt }}</dd></div>
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Input VAT (purchases)" %}</dt><dd class="tabular font-medium">{{ vat.input_vat|bdt }}</dd></div>
+    <div class="flex items-center justify-between bg-muted/50 p-4 dark:bg-slate-800/50"><dt class="font-semibold text-slate-700 dark:text-slate-200">{% trans "Net VAT payable" %}</dt><dd class="tabular font-semibold {% if vat.net_payable < 0 %}text-emerald-600{% else %}text-slate-800 dark:text-slate-100{% endif %}">{{ vat.net_payable|bdt }}</dd></div>
+  </dl>
+</section>
+{% endblock %}

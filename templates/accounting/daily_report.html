@@ -1,0 +1,50 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Daily financial report" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Daily report" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Daily financial report" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ report.day|ihms_date }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <form method="get" class="flex items-center gap-2">
+      <input type="date" name="day" value="{{ report.day|date:'Y-m-d' }}" class="h-10 rounded-[10px] border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-800">
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="search" class="h-4 w-4"></i> {% trans "Go" %}</button>
+    </form>
+    <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Revenue" value=report.revenue|bdt icon="trending-up" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Expense" value=report.expense|bdt icon="trending-down" accent="#EF4444" %}
+  {% include "components/kpi_card.html" with label="Net income" value=report.net_income|bdt icon="piggy-bank" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Output VAT" value=report.output_vat|bdt icon="percent" accent="#8B5CF6" %}
+  {% include "components/kpi_card.html" with label="Collections" value=report.collections|bdt icon="banknote" accent="#0EA5E9" %}
+  {% include "components/kpi_card.html" with label="Disbursements" value=report.disbursements|bdt icon="arrow-up-right" accent="#F59E0B" %}
+  {% include "components/kpi_card.html" with label="Net cash" value=report.net_cash|bdt icon="wallet" accent="#14B8A6" %}
+</div>
+
+<section class="max-w-xl rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <dl class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Revenue" %}</dt><dd class="tabular font-medium">{{ report.revenue|bdt }}</dd></div>
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Expense" %}</dt><dd class="tabular font-medium">{{ report.expense|bdt }}</dd></div>
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Output VAT" %}</dt><dd class="tabular font-medium">{{ report.output_vat|bdt }}</dd></div>
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Collections" %}</dt><dd class="tabular font-medium">{{ report.collections|bdt }}</dd></div>
+    <div class="flex items-center justify-between p-4"><dt class="text-slate-500">{% trans "Disbursements" %}</dt><dd class="tabular font-medium">{{ report.disbursements|bdt }}</dd></div>
+    <div class="flex items-center justify-between bg-muted/50 p-4 dark:bg-slate-800/50"><dt class="font-semibold text-slate-700 dark:text-slate-200">{% trans "Net cash movement" %}</dt><dd class="tabular font-semibold">{{ report.net_cash|bdt }}</dd></div>
+  </dl>
+</section>
+{% endblock %}

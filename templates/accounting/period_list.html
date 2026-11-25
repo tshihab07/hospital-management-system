@@ -1,0 +1,61 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Accounting periods" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Periods" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Fiscal periods" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Close a month to lock its postings." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if periods %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Period" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Start" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "End" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for period in periods %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-200">{{ period.name }}</td>
+          <td class="px-4 py-2.5 text-slate-500">{{ period.start_date|ihms_date }}</td>
+          <td class="px-4 py-2.5 text-slate-500">{{ period.end_date|ihms_date }}</td>
+          <td class="px-4 py-2.5">
+            {% if period.is_closed %}{% status_badge "Closed" "neutral" %}{% else %}{% status_badge "Open" "success" %}{% endif %}
+          </td>
+          <td class="px-4 py-2.5 text-right">
+            {% has_perm request.user "accounting.close_accountingperiod" as can_close %}
+            {% if not period.is_closed and can_close %}
+            <form method="post" action="{% url 'accounting:period_action' period.pk 'close' %}" class="inline">{% csrf_token %}
+              <button type="submit" class="text-red-600 hover:underline">{% trans "Close" %}</button>
+            </form>
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="calendar" title="No periods yet" message="Periods are created automatically when you post." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

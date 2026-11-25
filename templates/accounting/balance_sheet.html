@@ -1,0 +1,89 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Balance sheet" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Balance sheet" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Balance sheet" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "As of" %} {{ bs.as_of|ihms_date }}</p>
+  </div>
+  <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-48">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="{{ form.as_of.id_for_label }}">{{ form.as_of.label }}</label>
+      {{ form.as_of }}
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Generate" %}</button>
+  </form>
+
+  <div class="grid grid-cols-1 divide-y divide-slate-100 lg:grid-cols-2 lg:divide-x lg:divide-y-0 dark:divide-slate-800">
+    <div class="space-y-6 p-5">
+      <div>
+        <h2 class="mb-3 font-medium text-slate-700 dark:text-slate-200">{% trans "Assets" %}</h2>
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+            {% for row in bs.assets %}
+            <tr><td class="py-2 text-slate-600 dark:text-slate-300">{{ row.account.name }}</td><td class="py-2 text-right tabular">{{ row.amount|bdt }}</td></tr>
+            {% empty %}<tr><td class="py-2 text-slate-400" colspan="2">{% trans "No assets." %}</td></tr>{% endfor %}
+          </tbody>
+          <tfoot class="border-t border-slate-200 font-semibold dark:border-slate-700">
+            <tr><td class="py-2">{% trans "Total assets" %}</td><td class="py-2 text-right tabular">{{ bs.total_assets|bdt }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+    <div class="space-y-6 p-5">
+      <div>
+        <h2 class="mb-3 font-medium text-slate-700 dark:text-slate-200">{% trans "Liabilities" %}</h2>
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+            {% for row in bs.liabilities %}
+            <tr><td class="py-2 text-slate-600 dark:text-slate-300">{{ row.account.name }}</td><td class="py-2 text-right tabular">{{ row.amount|bdt }}</td></tr>
+            {% empty %}<tr><td class="py-2 text-slate-400" colspan="2">{% trans "No liabilities." %}</td></tr>{% endfor %}
+          </tbody>
+          <tfoot class="border-t border-slate-200 font-semibold dark:border-slate-700">
+            <tr><td class="py-2">{% trans "Total liabilities" %}</td><td class="py-2 text-right tabular">{{ bs.total_liabilities|bdt }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div>
+        <h2 class="mb-3 font-medium text-slate-700 dark:text-slate-200">{% trans "Equity" %}</h2>
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-slate-50 dark:divide-slate-800/50">
+            {% for row in bs.equity %}
+            <tr><td class="py-2 text-slate-600 dark:text-slate-300">{{ row.account.name }}</td><td class="py-2 text-right tabular">{{ row.amount|bdt }}</td></tr>
+            {% endfor %}
+            <tr><td class="py-2 text-slate-600 dark:text-slate-300">{% trans "Current period earnings" %}</td><td class="py-2 text-right tabular">{{ bs.retained_earnings|bdt }}</td></tr>
+          </tbody>
+          <tfoot class="border-t border-slate-200 font-semibold dark:border-slate-700">
+            <tr><td class="py-2">{% trans "Total equity" %}</td><td class="py-2 text-right tabular">{{ bs.total_equity|bdt }}</td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="flex flex-col gap-2 border-t border-slate-200 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700">
+    <span class="font-display font-semibold text-slate-700 dark:text-slate-200">{% trans "Liabilities + Equity" %} <span class="tabular">{{ bs.liabilities_and_equity|bdt }}</span></span>
+    {% if bs.difference == 0 %}
+      {% status_badge "Balanced" "success" %}
+    {% else %}
+      {% status_badge "Out of balance" "danger" %}
+      <span class="text-sm text-slate-500">{% trans "Difference" %}: {{ bs.difference|bdt }}</span>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

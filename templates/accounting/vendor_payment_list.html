@@ -1,0 +1,60 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Vendor payments" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'accounting:dashboard' %}" class="text-primary-600 hover:underline">{% trans "Accounting" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Vendor payments" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Vendor payments" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Settlements made against supplier invoices." %}</p>
+  </div>
+  {% has_perm request.user "accounting.add_vendorpayment" as can_add %}
+  {% if can_add %}
+  <a href="{% url 'accounting:vendor_payment_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "New payment" %}</a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if payments %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Date" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Vendor" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Method" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "GRN" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Journal" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Amount" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for payment in payments %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-2.5 text-slate-500">{{ payment.date|ihms_date }}</td>
+          <td class="px-4 py-2.5 text-slate-700 dark:text-slate-200">{{ payment.vendor.name }}</td>
+          <td class="px-4 py-2.5 text-slate-500">{{ payment.method }}</td>
+          <td class="px-4 py-2.5 font-mono text-xs text-slate-500">{{ payment.grn.grn_number|default:"—" }}</td>
+          <td class="px-4 py-2.5">{% if payment.journal %}<a href="{% url 'accounting:journal_detail' payment.journal.pk %}" class="font-mono text-xs text-primary-600 hover:underline">{{ payment.journal.entry_no }}</a>{% else %}—{% endif %}</td>
+          <td class="px-4 py-2.5 text-right tabular font-medium">{{ payment.amount|bdt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="banknote" title="No vendor payments" message="Payments you make to suppliers will appear here." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

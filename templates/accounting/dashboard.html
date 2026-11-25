@@ -1,0 +1,90 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Accounting" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Accounting" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Accounting & Financial Reports" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "General ledger, trial balance and hospital financial performance." %}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'accounting:journal_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "New journal" %}</a>
+    <a href="{% url 'accounting:chart' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="book-open" class="h-4 w-4"></i> {% trans "Chart of accounts" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if not kpis.trial_balanced %}
+<div class="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200">
+  <i data-lucide="alert-triangle" class="h-5 w-5"></i>
+  <span>{% trans "The trial balance is out of balance by" %} {{ kpis.trial_difference|bdt }}.</span>
+</div>
+{% endif %}
+
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {% include "components/kpi_card.html" with label="Revenue (MTD)" value=kpis.revenue|bdt icon="trending-up" accent="#10B981" %}
+  {% include "components/kpi_card.html" with label="Expense (MTD)" value=kpis.expense|bdt icon="trending-down" accent="#EF4444" %}
+  {% include "components/kpi_card.html" with label="Net income (MTD)" value=kpis.net_income|bdt icon="piggy-bank" accent="#4F46E5" %}
+  {% include "components/kpi_card.html" with label="Cash & bank" value=kpis.cash_and_bank|bdt icon="landmark" accent="#0EA5E9" %}
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
+      <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Recent journal entries" %}</h2>
+      <a href="{% url 'accounting:journal_list' %}" class="text-sm text-primary-600 hover:underline">{% trans "View all" %}</a>
+    </div>
+    {% if recent_journals %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for entry in recent_journals %}
+          <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+            <td class="px-4 py-3 font-mono text-xs text-slate-500">{{ entry.entry_no }}</td>
+            <td class="px-4 py-3"><a href="{% url 'accounting:journal_detail' entry.pk %}" class="font-medium text-primary-600 hover:underline">{{ entry.memo|default:entry.get_entry_type_display }}</a></td>
+            <td class="px-4 py-3 text-slate-500">{{ entry.date|ihms_date }}</td>
+            <td class="px-4 py-3">{% status_badge entry.get_status_display entry.status %}</td>
+            <td class="px-4 py-3 text-right tabular font-medium">{{ entry.total_debit|bdt }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="p-8">{% include "components/empty_state.html" with icon="book" title="No journal entries yet" message="Automatic and manual postings will appear here." %}</div>
+    {% endif %}
+  </section>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-medium text-slate-700 dark:text-slate-200">{% trans "Snapshot" %}</h2>
+      <dl class="space-y-3 text-sm">
+        <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Receivables" %}</dt><dd class="font-medium tabular">{{ receivables.total|bdt }}</dd></div>
+        <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Open bills" %}</dt><dd class="font-medium tabular">{{ receivables.open_count }}</dd></div>
+        <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Payables" %}</dt><dd class="font-medium tabular">{{ payables.total|bdt }}</dd></div>
+        <div class="flex items-center justify-between"><dt class="text-slate-500">{% trans "Open vendor bills" %}</dt><dd class="font-medium tabular">{{ payables.open_count }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-medium text-slate-700 dark:text-slate-200">{% trans "Reports" %}</h2>
+      <div class="grid grid-cols-1 gap-2 text-sm">
+        <a href="{% url 'accounting:trial_balance' %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="scale" class="h-4 w-4"></i> {% trans "Trial balance" %}</a>
+        <a href="{% url 'accounting:income_statement' %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="trending-up" class="h-4 w-4"></i> {% trans "Income statement" %}</a>
+        <a href="{% url 'accounting:balance_sheet' %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="landmark" class="h-4 w-4"></i> {% trans "Balance sheet" %}</a>
+        <a href="{% url 'accounting:receivables' %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="hand-coins" class="h-4 w-4"></i> {% trans "Receivables aging" %}</a>
+        <a href="{% url 'accounting:payables' %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="truck" class="h-4 w-4"></i> {% trans "Payables aging" %}</a>
+        <a href="{% url 'accounting:vat_return' %}" class="flex items-center gap-2 text-slate-600 hover:text-primary-600 dark:text-slate-300"><i data-lucide="percent" class="h-4 w-4"></i> {% trans "VAT return" %}</a>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
