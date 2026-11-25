@@ -1,0 +1,78 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'hr:staff_list' %}" class="hover:text-primary-600">{% trans "Staff" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ page_title }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ page_title }}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Profile, department and salary structure." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<form method="post" novalidate class="max-w-5xl">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="mb-6 rounded-[10px] border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Identity" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.employee_code %}
+        {% include "components/form_field.html" with field=form.name_en %}
+        {% include "components/form_field.html" with field=form.name_bn %}
+        {% include "components/form_field.html" with field=form.department %}
+        {% include "components/form_field.html" with field=form.designation %}
+        {% include "components/form_field.html" with field=form.user %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Contact & employment" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.phone %}
+        {% include "components/form_field.html" with field=form.email %}
+        {% include "components/form_field.html" with field=form.joining_date %}
+        {% include "components/form_field.html" with field=form.employment_type %}
+        {% include "components/form_field.html" with field=form.status %}
+        {% include "components/form_field.html" with field=form.shift %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Salary structure" %}</h2>
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.basic_salary %}
+        {% include "components/form_field.html" with field=form.house_rent %}
+        {% include "components/form_field.html" with field=form.medical_allowance %}
+        {% include "components/form_field.html" with field=form.transport_allowance %}
+        {% include "components/form_field.html" with field=form.other_allowance %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <div class="grid grid-cols-1 gap-x-6 sm:grid-cols-3">
+        {% include "components/form_field.html" with field=form.notes %}
+        {% include "components/form_field.html" with field=form.is_active %}
+      </div>
+    </section>
+  </div>
+
+  <div class="mt-5 flex items-center gap-3">
+    <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="save" class="h-4 w-4"></i> {% if is_create %}{% trans "Add staff" %}{% else %}{% trans "Save changes" %}{% endif %}
+    </button>
+    <a href="{% url 'hr:staff_list' %}" class="inline-flex h-10 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Cancel" %}</a>
+  </div>
+</form>
+{% endblock %}

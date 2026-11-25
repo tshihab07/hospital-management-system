@@ -1,0 +1,72 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Shift Templates" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Shift Templates" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Shift Templates" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Reusable shift patterns used to build the duty roster." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "hr.add_shift" as can_add %}
+    {% if can_add %}
+    <a href="{% url 'hr:shift_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="plus" class="h-4 w-4"></i> {% trans "Add shift" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  {% if shifts %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Name" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Code" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Start" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "End" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Night" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for shift in shifts %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ shift.name }}</td>
+          <td class="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ shift.code }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ shift.start_time|time:"H:i" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ shift.end_time|time:"H:i" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{% if shift.is_night %}{% trans "Yes" %}{% else %}{% trans "No" %}{% endif %}</td>
+          <td class="px-4 py-3">
+            {% if shift.is_active %}{% status_badge _("Active") "success" %}{% else %}{% status_badge _("Inactive") "neutral" %}{% endif %}
+          </td>
+          <td class="px-4 py-3 text-right">
+            {% has_perm request.user "hr.change_shift" as can_change %}
+            {% if can_change %}
+            <a href="{% url 'hr:shift_update' shift.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'Edit' %}"><i data-lucide="pencil" class="h-4 w-4"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="clock" title="No shifts yet" message="Create shift templates before building the roster." action_url="/hr/shifts/new/" action_label="Add shift" %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Salary structure" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'payroll:run_list' %}" class="text-primary-600 hover:underline">{% trans "Payroll" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Salary structure" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Salary structure" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Current salary components for active staff." %}</p>
+  </div>
+  <a href="{% querystring export='xlsx' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> Excel</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    <div class="w-64">
+      <label class="mb-1 block text-xs font-medium text-slate-500" for="id_search">{% trans "Search" %}</label>
+      <input type="text" name="search" id="id_search" value="{{ search }}" placeholder="{% trans 'Name or employee code' %}" class="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+    </div>
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="search" class="h-4 w-4"></i> {% trans "Search" %}</button>
+  </form>
+  {% if staff_members %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-xs">
+      <thead class="border-b border-slate-100 uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="whitespace-nowrap px-3 py-3 font-medium">{% trans "Employee" %}</th>
+          <th class="whitespace-nowrap px-3 py-3 font-medium">{% trans "Designation" %}</th>
+          <th class="whitespace-nowrap px-3 py-3 font-medium">{% trans "Tax category" %}</th>
+          <th class="whitespace-nowrap px-3 py-3 font-medium">{% trans "PF" %}</th>
+          <th class="px-3 py-3 text-right font-medium">{% trans "Basic" %}</th>
+          <th class="px-3 py-3 text-right font-medium">{% trans "House rent" %}</th>
+          <th class="px-3 py-3 text-right font-medium">{% trans "Medical" %}</th>
+          <th class="px-3 py-3 text-right font-medium">{% trans "Transport" %}</th>
+          <th class="px-3 py-3 text-right font-medium">{% trans "Other" %}</th>
+          <th class="px-3 py-3 text-right font-medium">{% trans "Gross" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for member in staff_members %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="whitespace-nowrap px-3 py-2"><span class="block text-slate-700 dark:text-slate-200">{{ member.display_name }}</span><span class="font-mono text-slate-400">{{ member.employee_code }}</span></td>
+          <td class="whitespace-nowrap px-3 py-2 text-slate-500">{{ member.designation|default:"—" }}</td>
+          <td class="whitespace-nowrap px-3 py-2 text-slate-500">{{ member.get_tax_category_display }}</td>
+          <td class="whitespace-nowrap px-3 py-2">{% if member.pf_eligible %}{% status_badge "Yes" "success" %}{% else %}{% status_badge "No" "neutral" %}{% endif %}</td>
+          <td class="px-3 py-2 text-right tabular">{{ member.basic_salary|bdt }}</td>
+          <td class="px-3 py-2 text-right tabular">{{ member.house_rent|bdt }}</td>
+          <td class="px-3 py-2 text-right tabular">{{ member.medical_allowance|bdt }}</td>
+          <td class="px-3 py-2 text-right tabular">{{ member.transport_allowance|bdt }}</td>
+          <td class="px-3 py-2 text-right tabular">{{ member.other_allowance|bdt }}</td>
+          <td class="px-3 py-2 text-right tabular font-semibold text-slate-700 dark:text-slate-200">{{ member.gross_salary|bdt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="users" title="No staff found" message="Add staff members or adjust your search." %}</div>
+  {% endif %}
+</section>
+{% endblock %}

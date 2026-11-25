@@ -1,0 +1,81 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'hr:leave_list' %}" class="hover:text-primary-600">{% trans "Leave" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Leave Request" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ leave.staff.display_name }}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ leave.leave_type }} · {{ leave.start_date|date:"d M Y" }} – {{ leave.end_date|date:"d M Y" }} ({{ leave.days }} {% trans "days" %})</p>
+  </div>
+  <div>
+    {% if leave.status == "approved" %}{% status_badge leave.get_status_display "success" %}
+    {% elif leave.status == "pending" %}{% status_badge leave.get_status_display "warning" %}
+    {% elif leave.status == "rejected" %}{% status_badge leave.get_status_display "danger" %}
+    {% else %}{% status_badge leave.get_status_display "neutral" %}{% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Staff" %}</dt><dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.staff.display_name }} ({{ leave.staff.employee_code }})</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Leave type" %}</dt><dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.leave_type }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Start" %}</dt><dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.start_date|date:"d M Y" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "End" %}</dt><dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.end_date|date:"d M Y" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Applied by" %}</dt><dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.applied_by|default:"—" }}</dd></div>
+      <div><dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Decided by" %}</dt><dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.decided_by|default:"—" }}{% if leave.decided_at %} · {{ leave.decided_at|date:"d M Y H:i" }}{% endif %}</dd></div>
+    </dl>
+    <div class="mt-6">
+      <dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Reason" %}</dt>
+      <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.reason|default:"—"|linebreaksbr }}</dd>
+    </div>
+    {% if leave.decision_note %}
+    <div class="mt-6">
+      <dt class="text-xs uppercase tracking-wide text-slate-400">{% trans "Decision note" %}</dt>
+      <dd class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ leave.decision_note }}</dd>
+    </div>
+    {% endif %}
+  </section>
+
+  {% has_perm request.user "hr.change_leaverequest" as can_decide %}
+  {% if can_decide %}
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Decision" %}</h2>
+    {% if leave.is_pending %}
+    <form method="post" action="{% url 'hr:leave_decide' leave.pk %}" class="space-y-3">
+      {% csrf_token %}
+      <textarea name="note" rows="3" placeholder="{% trans 'Decision note (optional)' %}" class="w-full rounded-[10px] border border-slate-200 bg-transparent px-3 py-2 text-sm text-slate-700 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-slate-700 dark:text-slate-200"></textarea>
+      <div class="flex items-center gap-2">
+        <button type="submit" name="action" value="approve" class="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[10px] bg-emerald-500 px-4 text-sm font-medium text-white hover:bg-emerald-600">
+          <i data-lucide="check" class="h-4 w-4"></i> {% trans "Approve" %}
+        </button>
+        <button type="submit" name="action" value="reject" class="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-[10px] bg-red-500 px-4 text-sm font-medium text-white hover:bg-red-600">
+          <i data-lucide="x" class="h-4 w-4"></i> {% trans "Reject" %}
+        </button>
+      </div>
+    </form>
+    {% elif leave.status == "approved" %}
+    <form method="post" action="{% url 'hr:leave_decide' leave.pk %}">
+      {% csrf_token %}
+      <button type="submit" name="action" value="cancel" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+        <i data-lucide="ban" class="h-4 w-4"></i> {% trans "Cancel leave" %}
+      </button>
+    </form>
+    {% else %}
+    <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "This request has been finalised." %}</p>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

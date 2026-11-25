@@ -1,0 +1,126 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Payroll" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Payroll" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Payroll" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Monthly salary processing with Bangladesh tax rules." %}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'payroll:salary_structure' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="table" class="h-4 w-4"></i> {% trans "Salary structure" %}</a>
+    <a href="{% url 'payroll:tax_slab_list' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="percent" class="h-4 w-4"></i> {% trans "Tax slabs" %}</a>
+    {% has_perm request.user "payroll.run_payroll" as can_run %}
+    {% if can_run %}
+    <a href="{% url 'payroll:run_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="play" class="h-4 w-4"></i> {% trans "Run payroll" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Runs this year" %} ({{ kpis.year }})</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.runs }}</p>
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Gross processed" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.gross|bdt }}</p>
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Net paid" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.net|bdt }}</p>
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Tax withheld" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ kpis.tax|bdt }}</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+      <div class="w-40">
+        <label class="mb-1 block text-xs font-medium text-slate-500" for="id_status">{% trans "Status" %}</label>
+        <select name="status" id="id_status" class="w-full rounded-[10px] border border-slate-200 bg-white px-3 py-2.5 text-sm dark:border-slate-700 dark:bg-slate-800">
+          <option value="">{% trans "All statuses" %}</option>
+          <option value="draft" {% if status == "draft" %}selected{% endif %}>{% trans "Draft" %}</option>
+          <option value="approved" {% if status == "approved" %}selected{% endif %}>{% trans "Approved" %}</option>
+          <option value="paid" {% if status == "paid" %}selected{% endif %}>{% trans "Paid" %}</option>
+          <option value="cancelled" {% if status == "cancelled" %}selected{% endif %}>{% trans "Cancelled" %}</option>
+        </select>
+      </div>
+      <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}</button>
+      <a href="{% url 'payroll:run_list' %}" class="inline-flex h-11 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Reset" %}</a>
+    </form>
+    {% if runs %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+          <tr>
+            <th class="px-4 py-3 font-medium">{% trans "Run" %}</th>
+            <th class="px-4 py-3 font-medium">{% trans "Period" %}</th>
+            <th class="px-4 py-3 text-right font-medium">{% trans "Employees" %}</th>
+            <th class="px-4 py-3 text-right font-medium">{% trans "Net" %}</th>
+            <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+            <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for run in runs %}
+          <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+            <td class="px-4 py-2.5 font-mono text-xs text-slate-500"><a href="{% url 'payroll:run_detail' run.pk %}" class="hover:text-primary-600">{{ run.code }}</a></td>
+            <td class="px-4 py-2.5 text-slate-600 dark:text-slate-300">{{ run.period_label }}</td>
+            <td class="px-4 py-2.5 text-right tabular text-slate-600 dark:text-slate-300">{{ run.employee_count }}</td>
+            <td class="px-4 py-2.5 text-right tabular text-slate-700 dark:text-slate-200">{{ run.total_net|bdt }}</td>
+            <td class="px-4 py-2.5">
+              {% if run.status == "draft" %}{% status_badge run.get_status_display "warning" %}
+              {% elif run.status == "approved" %}{% status_badge run.get_status_display "info" %}
+              {% elif run.status == "paid" %}{% status_badge run.get_status_display "success" %}
+              {% else %}{% status_badge run.get_status_display "neutral" %}{% endif %}
+            </td>
+            <td class="px-4 py-2.5 text-right">
+              <a href="{% url 'payroll:run_detail' run.pk %}" class="text-slate-400 hover:text-primary-600" title="{% trans 'View' %}"><i data-lucide="eye" class="h-4 w-4"></i></a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="p-4">{% include "components/pagination.html" %}</div>
+    {% else %}
+    <div class="p-8">{% include "components/empty_state.html" with icon="wallet-cards" title="No payroll runs yet" message="Generate the first monthly payroll run for your staff." %}</div>
+    {% endif %}
+  </section>
+
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Pending adjustments" %}</h2>
+      <a href="{% url 'payroll:adjustment_list' %}" class="text-xs text-primary-600 hover:underline">{% trans "All" %}</a>
+    </header>
+    <ul class="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+      {% for adjustment in pending_adjustments %}
+      <li class="flex items-center justify-between px-4 py-3">
+        <div>
+          <p class="font-medium text-slate-700 dark:text-slate-200">{{ adjustment.staff.display_name }}</p>
+          <p class="text-xs text-slate-400">{{ adjustment.reason }}</p>
+        </div>
+        <span class="tabular {% if adjustment.kind == 'earning' %}text-emerald-600{% else %}text-red-600{% endif %}">{{ adjustment.signed_amount|bdt }}</span>
+      </li>
+      {% empty %}
+      <li class="px-4 py-6 text-center text-slate-400">{% trans "No pending adjustments." %}</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+{% endblock %}

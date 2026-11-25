@@ -1,0 +1,62 @@
+{% extends "layouts/app.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Doctor Performance" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Doctor Performance" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6">
+  <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Doctor Performance" %}</h1>
+  <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Completed consultations and revenue share per doctor for the selected month." %}</p>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="flex flex-wrap items-end gap-3 border-b border-slate-100 p-4 dark:border-slate-800">
+    {% for field in form %}
+      {% include "components/form_field.html" with field=field wrapper_class="mb-0 min-w-[160px]" %}
+    {% endfor %}
+    <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="filter" class="h-4 w-4"></i> {% trans "Apply" %}
+    </button>
+  </form>
+
+  {% if rows %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Doctor" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Specialization" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Patients seen" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Revenue" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Share %" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Revenue share" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for row in rows %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ row.doctor.name_en }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.doctor.specialization|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.patients_seen }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">৳{{ row.revenue }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.doctor.revenue_share_pct }}%</td>
+          <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">৳{{ row.revenue_share }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="trending-up" title="No doctors found" message="Add doctors to see performance metrics." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

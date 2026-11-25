@@ -1,0 +1,110 @@
+{% load i18n ihms_tags %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% trans "Payslip" %} · {{ slip.employee_code }} · {{ slip.run.code }}</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    * { box-sizing: border-box; }
+    body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1e293b; font-size: 12px; margin: 0; }
+    h1, h2, h3 { margin: 0; }
+    .muted { color: #64748b; }
+    .right { text-align: right; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0ea5e9; padding-bottom: 10px; margin-bottom: 16px; }
+    .hospital h1 { font-size: 18px; color: #0f172a; }
+    .hospital p { margin: 2px 0; }
+    .title { text-align: right; }
+    .title .badge { display: inline-block; background: #0ea5e9; color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 11px; }
+    .grid { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 14px; }
+    .grid .col { flex: 1; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 5px 8px; }
+    thead th { text-align: left; text-transform: uppercase; font-size: 10px; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+    .amounts td { border-bottom: 1px solid #f1f5f9; }
+    .totals td { border-top: 2px solid #cbd5e1; font-weight: 700; }
+    .net { margin-top: 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: #1d4ed8; }
+    .attendance { margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+    .attendance div { display: inline-block; margin-right: 24px; }
+    .attendance .k { color: #94a3b8; font-size: 10px; text-transform: uppercase; display: block; }
+    .footer { margin-top: 28px; font-size: 10px; color: #94a3b8; text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 8px; }
+    .sign { margin-top: 48px; display: flex; justify-content: space-between; font-size: 11px; color: #475569; }
+    .sign span { border-top: 1px solid #94a3b8; padding-top: 4px; width: 30%; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="hospital">
+      <h1>{{ hospital.name|default:"Hospital" }}</h1>
+      {% if hospital.address %}<p>{{ hospital.address }}</p>{% endif %}
+      {% if hospital.phone %}<p>{{ hospital.phone }}</p>{% endif %}
+    </div>
+    <div class="title">
+      <span class="badge">{% trans "Payslip" %}</span>
+      <p class="muted" style="margin-top:6px;">{{ slip.run.period_label }}</p>
+      <p class="muted" style="font-family:monospace;">{{ slip.run.code }}</p>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <p><strong>{{ slip.name }}</strong></p>
+      <p class="muted">{{ slip.employee_code }}</p>
+      <p class="muted">{{ slip.designation|default:"" }}{% if slip.department %} · {{ slip.department }}{% endif %}</p>
+      <p class="muted">{% trans "Tax category" %}: {{ slip.get_tax_category_display }}</p>
+    </div>
+    <div class="col right">
+      <p class="muted">{% trans "Period" %}: {{ slip.run.period_start|ihms_date }} – {{ slip.run.period_end|ihms_date }}</p>
+      {% if slip.run.payment_date %}<p class="muted">{% trans "Payment date" %}: {{ slip.run.payment_date|ihms_date }}</p>{% endif %}
+      <p class="muted">{% trans "Method" %}: {{ slip.run.get_payment_method_display }}</p>
+      {% if slip.bank_account_no %}<p class="muted">{{ slip.bank_name }} · {{ slip.bank_account_no }}</p>{% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <table class="amounts">
+        <thead><tr><th>{% trans "Earnings" %}</th><th class="right">{% trans "Amount" %}</th></tr></thead>
+        <tbody>
+          {% for label, amount in earnings %}
+          <tr><td>{{ label }}</td><td class="right">{{ amount|bdt }}</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr class="totals"><td>{% trans "Gross earnings" %}</td><td class="right">{{ slip.gross_salary|bdt }}</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="col">
+      <table class="amounts">
+        <thead><tr><th>{% trans "Deductions" %}</th><th class="right">{% trans "Amount" %}</th></tr></thead>
+        <tbody>
+          {% for label, amount in deductions %}
+          <tr><td>{{ label }}</td><td class="right">{{ amount|bdt }}</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr class="totals"><td>{% trans "Total deductions" %}</td><td class="right">{{ slip.total_deductions|bdt }}</td></tr></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="net">
+    <span>{% trans "Net payable" %}</span>
+    <span>{{ slip.net_pay|bdt }}</span>
+  </div>
+
+  <div class="attendance">
+    <div><span class="k">{% trans "Working days" %}</span>{{ slip.working_days }}</div>
+    <div><span class="k">{% trans "Present" %}</span>{{ slip.present_days }}</div>
+    <div><span class="k">{% trans "Absent" %}</span>{{ slip.absent_days }}</div>
+    <div><span class="k">{% trans "Late" %}</span>{{ slip.late_days }}</div>
+    <div><span class="k">{% trans "half days" %}</span>{{ slip.half_days }}</div>
+    <div><span class="k">{% trans "Unpaid leave" %}</span>{{ slip.unpaid_leave_days }}</div>
+  </div>
+
+  <div class="sign">
+    <span>{% trans "Employee signature" %}</span>
+    <span>{% trans "Prepared by" %}</span>
+    <span>{% trans "Authorised signatory" %}</span>
+  </div>
+
+  <div class="footer">{% trans "This is a computer-generated payslip." %}</div>
+</body>
+</html>

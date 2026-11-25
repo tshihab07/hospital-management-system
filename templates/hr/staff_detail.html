@@ -1,0 +1,115 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ member.display_name }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'hr:staff_list' %}" class="hover:text-primary-600">{% trans "Staff" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ member.display_name }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div class="flex items-center gap-4">
+    <span class="grid h-14 w-14 place-items-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-500/10">
+      <i data-lucide="id-card" class="h-7 w-7"></i>
+    </span>
+    <div>
+      <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ member.display_name }}</h1>
+      <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+        {{ member.employee_code }}{% if member.designation %} · {{ member.designation }}{% endif %}{% if member.department %} · {{ member.department }}{% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "hr.change_staff" as can_change %}
+    {% if can_change %}
+    <a href="{% url 'hr:staff_update' member.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="pencil" class="h-4 w-4"></i> {% trans "Edit" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+    <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Weekly roster" %}</h2>
+    {% if upcoming_duties %}
+    <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+      {% for duty in upcoming_duties %}
+      <li class="flex items-center justify-between py-2.5 text-sm">
+        <span class="text-slate-600 dark:text-slate-300">{{ duty.duty_date|date:"D, d M Y" }}</span>
+        <span class="text-slate-700 dark:text-slate-200">{{ duty.shift }}</span>
+        {% if duty.is_published %}{% status_badge _("Published") "success" %}{% else %}{% status_badge _("Draft") "neutral" %}{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "No upcoming duties scheduled." %}</p>
+    {% endif %}
+
+    <h2 class="mb-4 mt-8 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Recent attendance" %}</h2>
+    {% if recent_attendance %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-xs uppercase tracking-wide text-slate-400">
+          <tr>
+            <th class="py-2 font-medium">{% trans "Date" %}</th>
+            <th class="py-2 font-medium">{% trans "Status" %}</th>
+            <th class="py-2 font-medium">{% trans "In" %}</th>
+            <th class="py-2 font-medium">{% trans "Out" %}</th>
+            <th class="py-2 font-medium">{% trans "Hours" %}</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for att in recent_attendance %}
+          <tr>
+            <td class="py-2 text-slate-600 dark:text-slate-300">{{ att.att_date|date:"d M Y" }}</td>
+            <td class="py-2">{% status_badge att.get_status_display "info" %}</td>
+            <td class="py-2 text-slate-600 dark:text-slate-300">{{ att.check_in|default:"—" }}</td>
+            <td class="py-2 text-slate-600 dark:text-slate-300">{{ att.check_out|default:"—" }}</td>
+            <td class="py-2 text-slate-600 dark:text-slate-300">{{ att.worked_hours|default:"—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "No attendance recorded yet." %}</p>
+    {% endif %}
+  </section>
+
+  <div class="space-y-6">
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Leave balances" %}</h2>
+      {% if balances %}
+      <ul class="space-y-2 text-sm">
+        {% for balance in balances %}
+        <li class="flex items-center justify-between">
+          <span class="text-slate-600 dark:text-slate-300">{{ balance.leave_type }}</span>
+          <span class="font-medium text-slate-700 dark:text-slate-200">{{ balance.remaining_days }} / {{ balance.entitled_days }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-500 dark:text-slate-400">{% trans "No leave balances for this year." %}</p>
+      {% endif %}
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      <h2 class="mb-4 font-display text-base font-semibold text-slate-700 dark:text-slate-200">{% trans "Salary" %}</h2>
+      <dl class="space-y-1.5 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">{% trans "Basic" %}</dt><dd class="text-slate-700 dark:text-slate-200">৳{{ member.basic_salary }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">{% trans "House rent" %}</dt><dd class="text-slate-700 dark:text-slate-200">৳{{ member.house_rent }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">{% trans "Medical" %}</dt><dd class="text-slate-700 dark:text-slate-200">৳{{ member.medical_allowance }}</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500 dark:text-slate-400">{% trans "Transport" %}</dt><dd class="text-slate-700 dark:text-slate-200">৳{{ member.transport_allowance }}</dd></div>
+        <div class="flex justify-between border-t border-slate-100 pt-2 dark:border-slate-800"><dt class="font-medium text-slate-600 dark:text-slate-300">{% trans "Gross" %}</dt><dd class="font-semibold text-slate-800 dark:text-slate-100">৳{{ member.gross_salary }}</dd></div>
+      </dl>
+    </section>
+  </div>
+</div>
+{% endblock %}

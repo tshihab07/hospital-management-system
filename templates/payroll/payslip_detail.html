@@ -1,0 +1,83 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Payslip" %} · {{ slip.name }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'payroll:run_list' %}" class="text-primary-600 hover:underline">{% trans "Payroll" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'payroll:run_detail' slip.run.pk %}" class="text-primary-600 hover:underline">{{ slip.run.code }}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ slip.employee_code }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Payslip" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{{ slip.run.period_label }} · {{ slip.name }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'payroll:payslip_pdf' slip.pk %}" target="_blank" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="printer" class="h-4 w-4"></i> {% trans "Print / PDF" %}</a>
+    <a href="{% url 'payroll:run_detail' slip.run.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">{% trans "Back to run" %}</a>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <section class="rounded-2xl border border-slate-200 bg-surface p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <div class="flex items-start justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+      <div>
+        <h2 class="font-display text-lg font-bold text-slate-800 dark:text-slate-100">{{ slip.name }}</h2>
+        <p class="font-mono text-xs text-slate-400">{{ slip.employee_code }}</p>
+        <p class="mt-1 text-sm text-slate-500">{{ slip.designation|default:"—" }}{% if slip.department %} · {{ slip.department }}{% endif %}</p>
+      </div>
+      <div class="text-right text-sm">
+        <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Pay period" %}</p>
+        <p class="font-medium text-slate-700 dark:text-slate-200">{{ slip.run.period_label }}</p>
+        <p class="text-xs text-slate-400">{{ slip.run.period_start|ihms_date }} – {{ slip.run.period_end|ihms_date }}</p>
+        {% if slip.run.payment_date %}<p class="mt-1 text-xs text-slate-400">{% trans "Payment" %}: {{ slip.run.payment_date|ihms_date }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 py-5 sm:grid-cols-2">
+      <div>
+        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-600">{% trans "Earnings" %}</h3>
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for label, amount in earnings %}
+            <tr><td class="py-2 text-slate-500">{{ label }}</td><td class="py-2 text-right tabular text-slate-700 dark:text-slate-200">{{ amount|bdt }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr class="border-t border-slate-200 dark:border-slate-700"><td class="py-2 font-semibold text-slate-700 dark:text-slate-200">{% trans "Gross earnings" %}</td><td class="py-2 text-right font-semibold tabular text-slate-800 dark:text-slate-100">{{ slip.gross_salary|bdt }}</td></tr></tfoot>
+        </table>
+      </div>
+      <div>
+        <h3 class="mb-2 text-xs font-semibold uppercase tracking-wide text-red-600">{% trans "Deductions" %}</h3>
+        <table class="w-full text-sm">
+          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+            {% for label, amount in deductions %}
+            <tr><td class="py-2 text-slate-500">{{ label }}</td><td class="py-2 text-right tabular text-slate-700 dark:text-slate-200">{{ amount|bdt }}</td></tr>
+            {% endfor %}
+          </tbody>
+          <tfoot><tr class="border-t border-slate-200 dark:border-slate-700"><td class="py-2 font-semibold text-slate-700 dark:text-slate-200">{% trans "Total deductions" %}</td><td class="py-2 text-right font-semibold tabular text-slate-800 dark:text-slate-100">{{ slip.total_deductions|bdt }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between rounded-xl bg-primary-50 px-5 py-4 dark:bg-primary-950/40">
+      <span class="font-medium text-primary-700 dark:text-primary-300">{% trans "Net payable" %}</span>
+      <span class="font-display text-xl font-bold tabular text-primary-700 dark:text-primary-300">{{ slip.net_pay|bdt }}</span>
+    </div>
+
+    <div class="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 text-xs text-slate-500 dark:border-slate-800 sm:grid-cols-4">
+      <div><dt class="uppercase tracking-wide text-slate-400">{% trans "Working days" %}</dt><dd class="tabular text-slate-700 dark:text-slate-200">{{ slip.working_days }}</dd></div>
+      <div><dt class="uppercase tracking-wide text-slate-400">{% trans "Present" %}</dt><dd class="tabular text-slate-700 dark:text-slate-200">{{ slip.present_days }}</dd></div>
+      <div><dt class="uppercase tracking-wide text-slate-400">{% trans "Absent" %}</dt><dd class="tabular text-slate-700 dark:text-slate-200">{{ slip.absent_days }}</dd></div>
+      <div><dt class="uppercase tracking-wide text-slate-400">{% trans "Tax category" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ slip.get_tax_category_display }}</dd></div>
+    </div>
+  </section>
+</div>
+{% endblock %}

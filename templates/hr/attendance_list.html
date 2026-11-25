@@ -1,0 +1,99 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Attendance" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Attendance" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Attendance" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Daily attendance captured manually or imported from a biometric device." %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    {% has_perm request.user "hr.change_attendance" as can_change %}
+    {% if can_change %}
+    <a href="{% url 'hr:attendance_import' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm font-medium text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">
+      <i data-lucide="upload" class="h-4 w-4"></i> {% trans "Import" %}
+    </a>
+    <a href="{% url 'hr:attendance_mark' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+      <i data-lucide="plus" class="h-4 w-4"></i> {% trans "Mark attendance" %}
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+  {% include "components/kpi_card.html" with label=_("Total") value=summary.total icon="clipboard-list" %}
+  {% include "components/kpi_card.html" with label=_("Present") value=summary.present icon="check" %}
+  {% include "components/kpi_card.html" with label=_("Absent") value=summary.absent icon="x" %}
+  {% include "components/kpi_card.html" with label=_("Late") value=summary.late icon="clock" %}
+</div>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <form method="get" class="grid grid-cols-1 gap-3 border-b border-slate-100 p-4 dark:border-slate-800 sm:grid-cols-2 lg:grid-cols-4 lg:items-end">
+    {% for field in filter_form %}
+      {% include "components/form_field.html" with field=field wrapper_class="mb-0" %}
+    {% endfor %}
+    <div class="flex items-center gap-2">
+      <button type="submit" class="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600">
+        <i data-lucide="filter" class="h-4 w-4"></i> {% trans "Filter" %}
+      </button>
+      <a href="{% url 'hr:attendance_list' %}" class="inline-flex h-11 items-center rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300">{% trans "Reset" %}</a>
+    </div>
+  </form>
+
+  {% if records %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Date" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Staff" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Status" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "In" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Out" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Hours" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Source" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for record in records %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ record.att_date|date:"d M Y" }}</td>
+          <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{{ record.staff.display_name }}</td>
+          <td class="px-4 py-3">
+            {% if record.status == "present" %}{% status_badge record.get_status_display "success" %}
+            {% elif record.status == "absent" %}{% status_badge record.get_status_display "danger" %}
+            {% elif record.status == "late" %}{% status_badge record.get_status_display "warning" %}
+            {% else %}{% status_badge record.get_status_display "info" %}{% endif %}
+          </td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ record.check_in|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ record.check_out|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ record.worked_hours|default:"—" }}</td>
+          <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ record.get_source_display }}</td>
+          <td class="px-4 py-3 text-right">
+            {% if can_change %}
+            <a href="{% url 'hr:attendance_edit' record.pk %}" class="ml-1 text-slate-400 hover:text-primary-600" title="{% trans 'Edit' %}"><i data-lucide="pencil" class="h-4 w-4"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4">{% include "components/pagination.html" %}</div>
+  {% else %}
+  <div class="p-6">
+    {% include "components/empty_state.html" with icon="fingerprint" title="No attendance records" message="Mark attendance or import a biometric CSV export." %}
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

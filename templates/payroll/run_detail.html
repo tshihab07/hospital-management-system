@@ -1,0 +1,155 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{{ run.code }}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'payroll:run_list' %}" class="text-primary-600 hover:underline">{% trans "Payroll" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{{ run.code }}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{{ run.period_label }}</h1>
+    <p class="mt-0.5 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+      <span class="font-mono text-xs">{{ run.code }}</span>
+      {% if run.status == "draft" %}{% status_badge run.get_status_display "warning" %}
+      {% elif run.status == "approved" %}{% status_badge run.get_status_display "info" %}
+      {% elif run.status == "paid" %}{% status_badge run.get_status_display "success" %}
+      {% else %}{% status_badge run.get_status_display "neutral" %}{% endif %}
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'payroll:register' run.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="table" class="h-4 w-4"></i> {% trans "Register" %}</a>
+    {% has_perm request.user "payroll.export_beftn" as can_export %}
+    {% if can_export and run.is_locked %}
+    <a href="{% url 'payroll:run_bank_file' run.pk %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-slate-200 px-4 text-sm text-slate-600 hover:bg-muted dark:border-slate-700 dark:text-slate-300"><i data-lucide="download" class="h-4 w-4"></i> {% trans "BEFTN file" %}</a>
+    {% endif %}
+    {% has_perm request.user "payroll.approve_payrollrun" as can_approve %}
+    {% has_perm request.user "payroll.pay_payrollrun" as can_pay %}
+    {% has_perm request.user "payroll.run_payroll" as can_run %}
+    {% if run.is_editable and can_approve %}
+    <form method="post" action="{% url 'payroll:run_action' run.pk 'approve' %}" class="inline">{% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="lock" class="h-4 w-4"></i> {% trans "Approve & lock" %}</button>
+    </form>
+    {% endif %}
+    {% if run.can_pay and can_pay %}
+    <form method="post" action="{% url 'payroll:run_action' run.pk 'pay' %}" class="inline">{% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700"><i data-lucide="badge-check" class="h-4 w-4"></i> {% trans "Mark paid" %}</button>
+    </form>
+    {% endif %}
+    {% if run.is_editable and can_run %}
+    <form method="post" action="{% url 'payroll:run_action' run.pk 'cancel' %}" class="inline" onsubmit="return confirm('{% trans "Cancel this payroll run?" %}');">{% csrf_token %}
+      <button type="submit" class="inline-flex h-10 items-center gap-2 rounded-[10px] border border-red-200 px-4 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/40"><i data-lucide="x-circle" class="h-4 w-4"></i> {% trans "Cancel" %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+{% if beftn_validation.issues %}
+<div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-900 dark:bg-amber-950/40">
+  <p class="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-200"><i data-lucide="triangle-alert" class="h-4 w-4"></i> {% trans "BEFTN bank-detail issues" %}</p>
+  <ul class="mt-2 list-disc space-y-1 pl-5 text-amber-700 dark:text-amber-300">
+    {% for code, name, reason in beftn_validation.issues %}
+    <li><span class="font-mono text-xs">{{ code }}</span> · {{ name }} — {{ reason }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+<div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Employees" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ run.employee_count }}</p>
+    {% if can_export %}<p class="mt-1 text-xs text-slate-400">{{ beftn.count }} {% trans "bank transfers" %}</p>{% endif %}
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Gross earnings" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-slate-800 dark:text-slate-100">{{ run.total_gross|bdt }}</p>
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Deductions" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-red-600">{{ run.total_deductions|bdt }}</p>
+    <p class="mt-1 text-xs text-slate-400">{% trans "Tax" %}: {{ run.total_tax|bdt }} · {% trans "PF" %}: {{ run.total_pf_employee|bdt }}</p>
+  </div>
+  <div class="rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <p class="text-xs uppercase tracking-wide text-slate-400">{% trans "Net payable" %}</p>
+    <p class="mt-1 font-display text-2xl font-bold tabular text-emerald-600">{{ run.total_net|bdt }}</p>
+  </div>
+</div>
+
+<section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+    <h2 class="font-medium text-slate-700 dark:text-slate-200">{% trans "Payslips" %}</h2>
+  </header>
+  {% if payslips %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left text-sm">
+      <thead class="border-b border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
+        <tr>
+          <th class="px-4 py-3 font-medium">{% trans "Employee" %}</th>
+          <th class="px-4 py-3 font-medium">{% trans "Designation" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Gross" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Deductions" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Net" %}</th>
+          <th class="px-4 py-3 text-right font-medium">{% trans "Actions" %}</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for slip in payslips %}
+        <tr class="hover:bg-muted/60 dark:hover:bg-slate-800/60">
+          <td class="px-4 py-2.5">
+            <p class="font-medium text-slate-700 dark:text-slate-200">{{ slip.name }}</p>
+            <p class="font-mono text-xs text-slate-400">{{ slip.employee_code }}</p>
+          </td>
+          <td class="px-4 py-2.5 text-slate-500">{{ slip.designation|default:"—" }}</td>
+          <td class="px-4 py-2.5 text-right tabular text-slate-600 dark:text-slate-300">{{ slip.gross_salary|bdt }}</td>
+          <td class="px-4 py-2.5 text-right tabular text-slate-600 dark:text-slate-300">{{ slip.total_deductions|bdt }}</td>
+          <td class="px-4 py-2.5 text-right tabular font-medium text-slate-700 dark:text-slate-200">{{ slip.net_pay|bdt }}</td>
+          <td class="px-4 py-2.5 text-right whitespace-nowrap">
+            <a href="{% url 'payroll:payslip_detail' slip.pk %}" class="text-slate-400 hover:text-primary-600" title="{% trans 'View' %}"><i data-lucide="eye" class="h-4 w-4 inline"></i></a>
+            <a href="{% url 'payroll:payslip_pdf' slip.pk %}" class="ml-2 text-slate-400 hover:text-primary-600" title="{% trans 'PDF' %}"><i data-lucide="file-text" class="h-4 w-4 inline"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot class="border-t-2 border-slate-200 font-semibold dark:border-slate-700">
+        <tr>
+          <td colspan="2" class="px-4 py-3 text-right text-slate-500">{% trans "Totals" %}</td>
+          <td class="px-4 py-3 text-right tabular">{{ run.total_gross|bdt }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ run.total_deductions|bdt }}</td>
+          <td class="px-4 py-3 text-right tabular">{{ run.total_net|bdt }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-8">{% include "components/empty_state.html" with icon="wallet-cards" title="No payslips" message="This run has no payslips yet." %}</div>
+  {% endif %}
+</section>
+
+{% if run.journal or run.approved_by or run.paid_by %}
+<section class="mt-6 rounded-2xl border border-slate-200 bg-surface p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+  <h2 class="mb-3 font-medium text-slate-700 dark:text-slate-200">{% trans "Audit trail" %}</h2>
+  <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+    {% if run.approved_by %}
+    <div><dt class="text-slate-400">{% trans "Approved by" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ run.approved_by }} · {{ run.approved_at|date:"Y-m-d H:i" }}</dd></div>
+    {% endif %}
+    {% if run.paid_by %}
+    <div><dt class="text-slate-400">{% trans "Paid by" %}</dt><dd class="text-slate-700 dark:text-slate-200">{{ run.paid_by }} · {{ run.paid_at|date:"Y-m-d H:i" }}</dd></div>
+    {% endif %}
+    {% if run.journal %}
+    <div><dt class="text-slate-400">{% trans "Accrual journal" %}</dt><dd><a href="{% url 'accounting:journal_detail' run.journal.pk %}" class="text-primary-600 hover:underline">{{ run.journal }}</a></dd></div>
+    {% endif %}
+    {% if run.payment_journal %}
+    <div><dt class="text-slate-400">{% trans "Payment journal" %}</dt><dd><a href="{% url 'accounting:journal_detail' run.payment_journal.pk %}" class="text-primary-600 hover:underline">{{ run.payment_journal }}</a></dd></div>
+    {% endif %}
+  </dl>
+</section>
+{% endif %}
+{% endblock %}

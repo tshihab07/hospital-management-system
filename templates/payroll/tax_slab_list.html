@@ -1,0 +1,61 @@
+{% extends "layouts/app.html" %}
+{% load i18n ihms_tags %}
+
+{% block title %}{% trans "Income-tax slabs" %}{% endblock %}
+
+{% block breadcrumb_items %}
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <a href="{% url 'payroll:run_list' %}" class="text-primary-600 hover:underline">{% trans "Payroll" %}</a>
+  <i data-lucide="chevron-right" class="h-4 w-4"></i>
+  <span class="text-slate-700 dark:text-slate-200">{% trans "Tax slabs" %}</span>
+{% endblock %}
+
+{% block page_header %}
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <div>
+    <h1 class="font-display text-2xl font-bold text-slate-800 dark:text-slate-100">{% trans "Income-tax slabs" %}</h1>
+    <p class="mt-0.5 text-sm text-slate-500 dark:text-slate-400">{% trans "Progressive bands used to withhold monthly income tax." %}</p>
+  </div>
+  {% has_perm request.user "payroll.manage_taxslab" as can_manage %}
+  {% if can_manage %}
+  <a href="{% url 'payroll:tax_slab_create' %}" class="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary-500 px-4 text-sm font-medium text-white hover:bg-primary-600"><i data-lucide="plus" class="h-4 w-4"></i> {% trans "New slab" %}</a>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+  {% for slab in slabs %}
+  <section class="rounded-2xl border border-slate-200 bg-surface shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    <header class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+      <div>
+        <h2 class="font-medium text-slate-700 dark:text-slate-200">{{ slab.label }}</h2>
+        <p class="text-xs text-slate-400">{% trans "Threshold" %}: {{ slab.tax_free_threshold|bdt }} · {% trans "Min tax" %}: {{ slab.minimum_tax|bdt }}</p>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if slab.is_active %}{% status_badge "Active" "success" %}{% else %}{% status_badge "Inactive" "neutral" %}{% endif %}
+        {% if can_manage %}<a href="{% url 'payroll:tax_slab_update' slab.pk %}" class="text-slate-400 hover:text-primary-600"><i data-lucide="pencil" class="h-4 w-4"></i></a>{% endif %}
+      </div>
+    </header>
+    <table class="w-full text-left text-sm">
+      <thead class="text-xs uppercase tracking-wide text-slate-400">
+        <tr><th class="px-4 py-2 font-medium">#</th><th class="px-4 py-2 font-medium">{% trans "Band" %}</th><th class="px-4 py-2 text-right font-medium">{% trans "Rate" %}</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        {% for bracket in slab.brackets.all %}
+        <tr>
+          <td class="px-4 py-2 text-slate-400">{{ forloop.counter }}</td>
+          <td class="px-4 py-2 text-slate-600 dark:text-slate-300">{% if bracket.band_amount %}{{ bracket.band_amount|bdt }}{% else %}{% trans "Remaining" %}{% endif %}<span class="text-xs text-slate-400">{% if bracket.label %} · {{ bracket.label }}{% endif %}</span></td>
+          <td class="px-4 py-2 text-right tabular text-slate-600 dark:text-slate-300">{{ bracket.rate }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% empty %}
+  <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-surface p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+    {% include "components/empty_state.html" with icon="percent" title="No tax slabs" message="Run 'manage.py seed_payroll' to load the current NBR grid." %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
