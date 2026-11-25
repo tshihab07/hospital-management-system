@@ -1,0 +1,21 @@
+{% load i18n %}<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% trans "Error" %}{% endblock %} · IHMS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:["Inter","sans-serif"],display:["Manrope","sans-serif"]},colors:{primary:{500:"#4F46E5",600:"#4338CA",900:"#1E1B4B"}}}}}</script>
+</head>
+<body class="grid min-h-screen place-items-center bg-slate-50 px-4 font-sans text-slate-700">
+  <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-lg">
+    <p class="font-display text-6xl font-extrabold text-primary-500">{% block code %}{% endblock %}</p>
+    <h1 class="mt-4 font-display text-xl font-bold text-slate-800">{% block heading %}{% endblock %}</h1>
+    <p class="mt-2 text-sm text-slate-500">{% block detail %}{% endblock %}</p>
+    <a href="/" class="mt-6 inline-flex h-10 items-center rounded-[10px] bg-primary-500 px-5 text-sm font-semibold text-white hover:bg-primary-600">
+      {% trans "Back to home" %}
+    </a>
+  </div>
+</body>
+</html>
